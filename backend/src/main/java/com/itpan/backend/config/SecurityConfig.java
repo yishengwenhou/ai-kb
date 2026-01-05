@@ -58,9 +58,10 @@ public class SecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
-                .anyRequest().authenticated()
+//                    .requestMatchers("/api/auth/**").permitAll()
+//                    .requestMatchers("/api/public/**").permitAll()
+//                    .anyRequest().authenticated()
+                    .requestMatchers("/**").permitAll()
             );
 
         http.authenticationProvider(authenticationProvider());
