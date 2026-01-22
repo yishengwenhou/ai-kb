@@ -23,7 +23,11 @@ public class KnowledgeBase extends BaseEntity {
      * 2-指定部门 (需关联部门ID)
      */
     @TableField(value = "visibility")
-    private Integer visibility; 
+    private Integer visibility;
+
+    /** 所属部门ID (新增字段) */
+    @TableField(value = "dept_id")
+    private Long deptId;
 
     /** * 向量数据库中的集合名称
      * 对应报告中的 Qdrant/Chroma 存储 

@@ -27,10 +27,11 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtUtil jwtUtil;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(new JwtUtil(),userDetailsService);
+        return new JwtAuthenticationFilter(jwtUtil,userDetailsService);
     }
 
     @Bean

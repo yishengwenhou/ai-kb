@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/knowledge-base")
+@RequestMapping("/api/kb")
 @RequiredArgsConstructor
 public class KnowledgeBaseController {
 
@@ -24,11 +24,12 @@ public class KnowledgeBaseController {
      */
     @GetMapping
     public ResponseEntity<?> listKnowledgeBases(
-            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String keyword,
+            @RequestParam Long deptId,
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize) {
         
-        List<KnowledgeBase> knowledgeBases = knowledgeBaseService.listKnowledgeBases(name, pageNum, pageSize);
+        List<KnowledgeBase> knowledgeBases = knowledgeBaseService.listKnowledgeBases(keyword, deptId, pageNum, pageSize);
         
         Map<String, Object> response = new HashMap<>();
         response.put("data", knowledgeBases);
@@ -62,8 +63,8 @@ public class KnowledgeBaseController {
      * @return
      */
     @GetMapping("/{id}/documents")
-    public ResponseEntity<?> getDocuments(@PathVariable Long id) {
-        List<Document> documents = knowledgeBaseService.getDocuments(id);
+    public ResponseEntity<?> getDocuments(@PathVariable Long id,@RequestParam(required = false) String keyword) {
+        List<Document> documents = knowledgeBaseService.getDocuments(id,keyword);
 
         Map<String, Object> response = new HashMap<>();
         response.put("data", documents);
@@ -71,7 +72,6 @@ public class KnowledgeBaseController {
 
         return ResponseEntity.ok(response);
     }
-
 
 
     /**

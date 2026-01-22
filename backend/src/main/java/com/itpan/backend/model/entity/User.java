@@ -2,17 +2,23 @@ package com.itpan.backend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName("User")
 public class User extends BaseEntity {
     @TableField(value = "username")
     private String username;  // 用户名
+
+    @TableField(value = "phone")
+    private String phone;     // 手机号
+
+    @TableField(value = "gender")
+    private Integer gender;
     
     @TableField(value = "password")
     private String password;  // 加密后的密码

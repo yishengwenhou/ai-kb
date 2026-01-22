@@ -7,49 +7,130 @@ import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.service.DocumentService;
 import com.itpan.backend.util.OssUtil;
 import jakarta.annotation.Resource;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.DigestUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Service
 public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> implements DocumentService {
 
     @Resource
     private OssUtil ossUtil;
 
+    @Resource
+    private  DocumentAsyncServiceImpl documentAsyncService;
+
     @Override
-    public Document uploadAndSave(MultipartFile file, Long kbId) {
-        // 1. 上传到 OSS
-        String url;
+    public Document uploadAndSave(MultipartFile file, Long kbId, Long parentId) {
         try {
-            url = ossUtil.upload(file.getInputStream(), file.getOriginalFilename());
+            // 1. 计算哈希 (MD5 或 SHA-256)
+            String fileHash = DigestUtils.md5DigestAsHex(file.getInputStream());
+
+            // 2. 查库：是否已存在相同哈希的文件？
+            Document existDoc = this.getOne(new LambdaQueryWrapper<Document>()
+                    .eq(Document::getFileHash, fileHash)
+                    .last("LIMIT 1")); // 只要查到一个就行
+
+            if (existDoc != null) {
+                Document newDoc = Document.builder()
+                        .kbId(kbId)
+                        .fileName(file.getOriginalFilename())
+                        .fileType(file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".") + 1))
+                        .filePath(existDoc.getFilePath()) // 复用 OSS 路径
+                        .fileSize(file.getSize())
+                        .fileHash(fileHash)
+                        .parentId(parentId)
+                        .build();
+
+                // 【优化】检查旧文件是否已经解析好了
+                if (existDoc.getStatus() == 0 && existDoc.getContent() != null) {
+                    // 秒传的核心：直接复用解析结果！
+                    newDoc.setContent(existDoc.getContent());
+                    newDoc.setCharCount(existDoc.getCharCount());
+                    newDoc.setStatus(0); // 直接就绪
+                    this.save(newDoc);
+                    // 直接返回，【不】调用 parseDocument
+                    return newDoc;
+                } else {
+                    // 旧文件可能解析失败了，或者正在解析中，那新文件也标记为处理中，重新尝试解析
+                    newDoc.setStatus(1);
+                    this.save(newDoc);
+                    documentAsyncService.parseDocument(newDoc.getId());
+                    return newDoc;
+                }
+            }
+
+            // 3. 上传 OSS
+            String url = ossUtil.upload(file.getInputStream(), file.getOriginalFilename());
+
+            // 4. 构建并保存 Document 对象
+            Document doc = Document.builder()
+                    .kbId(kbId)
+                    .fileName(file.getOriginalFilename())
+                    .fileType(file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".") + 1))
+                    .filePath(url)
+                    .fileSize(file.getSize())
+                    .fileHash(fileHash)
+                    .parentId(parentId)
+                    .status(1) // 1-处理中
+                    .build();
+
+            this.save(doc);
+
+            // 5. 【关键修复】手动触发异步解析
+            documentAsyncService.parseDocument(doc.getId());
+
+            return doc;
+
         } catch (IOException e) {
-            throw new RuntimeException("文件流读取失败", e);
+            throw new RuntimeException("文件处理失败", e);
+        }
+    }
+
+    @Override
+    public boolean deleteDocument(Long id) {
+        // 1. 先查询文档信息
+        Document doc = this.getById(id);
+        if (doc == null) {
+            return false;
         }
 
-        // 2. 封装 Document 对象
-        String fileName = file.getOriginalFilename();
-        String suffix = fileName.substring(fileName.lastIndexOf(".") + 1);
+        // 2. 检查文件夹逻辑 (保持不变)
+        if (doc.getIsFolder() == 1) {
+            Long count = baseMapper.selectCount(
+                    new LambdaQueryWrapper<Document>().eq(Document::getParentId, id)
+            );
+            if (count > 0) {
+                throw new RuntimeException("该目录下仍有 " + count + " 个子文档，请先清空后再删除！");
+            }
+        }
 
-        Document doc = Document.builder()
-                .kbId(kbId)
-                .fileName(fileName)
-                .fileType(suffix)
-                .filePath(url)
-                .fileSize(file.getSize())
-                .status(1)
-                .build();
+        if (doc.getIsFolder() == 0 && doc.getFileHash() != null) {
+            // 查询数据库中，拥有相同 file_hash 的文档数量
+            Long refCount = baseMapper.selectCount(
+                    new LambdaQueryWrapper<Document>()
+                            .eq(Document::getFileHash, doc.getFileHash())
+            );
 
-        // 3. 落库
-        this.save(doc);
+            if (refCount == 1) {
+                try {
+                    ossUtil.delete(doc.getFilePath());
+                    log.info("OSS文件已物理删除: {}", doc.getFilePath());
+                } catch (Exception e) {
+                    log.error("OSS文件删除失败: {}", doc.getFilePath());
+                }
+            } else {
+                log.info("该文件仍有 {} 处引用，跳过物理删除，仅删除数据库记录", refCount);
+            }
+        }
 
-        // 4. TODO: 这里将来要发送一个事件或调用异步方法，开始解析文档
-        // asyncParseService.parse(doc.getId());
-
-        return doc;
+        // 4. 删除数据库记录
+        return this.removeById(id);
     }
 
     @Override

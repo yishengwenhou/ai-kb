@@ -47,4 +47,13 @@ public class Document extends BaseEntity {
      */
     @TableField(value = "char_count")
     private Integer charCount;
+
+    @TableField(value = "content")
+    private String content;
+
+    @TableField("parent_id")
+    private Long parentId; // 父节点ID
+
+    @TableField("is_folder")
+    private Integer isFolder; // 0-文件, 1-目录
 }

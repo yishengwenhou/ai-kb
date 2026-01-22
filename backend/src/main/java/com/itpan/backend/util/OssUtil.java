@@ -30,6 +30,25 @@ public class OssUtil {
                 ossConfig.getAccessKeySecret());
     }
 
+    /**
+     * 生成带签名的临时访问链接 (针对私有读 Bucket)
+     * @param objectName OSS中的文件名 (如 uploads/2023/...) 或 完整URL
+     * @param expirationSeconds 过期时间(秒)，例如 3600 代表1小时
+     * @return 带签名的URL
+     */
+    public String getPrivateUrl(String objectName, int expirationSeconds) {
+        // 如果传进来的是完整URL，先提取出 ObjectName (你现有的方法)
+        if (objectName.startsWith("http")) {
+            objectName = extractObjectNameFromUrl(objectName);
+        }
+
+        Date expiration = new Date(System.currentTimeMillis() + expirationSeconds * 1000L);
+        // 生成签名URL
+        java.net.URL url = ossClient.generatePresignedUrl(ossConfig.getBucketName(), objectName, expiration);
+
+        return url.toString();
+    }
+
     public String upload(InputStream inputStream, String fileName) {
         try {
             String ext = fileName.substring(fileName.lastIndexOf("."));

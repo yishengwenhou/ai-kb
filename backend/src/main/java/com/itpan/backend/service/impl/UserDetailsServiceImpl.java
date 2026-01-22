@@ -2,6 +2,7 @@ package com.itpan.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.itpan.backend.model.entity.User;
+import com.itpan.backend.security.CustomUserDetails;
 import com.itpan.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,26 +22,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        QueryWrapper<User> wrapper = new QueryWrapper<>();
-        wrapper.eq("username", username);
-        User user = userService.getOne(wrapper);
-        
+        // 1. 查数据库
+        User user = userService.getUserByUsername(username);
         if (user == null) {
-            throw new UsernameNotFoundException("用户不存在: " + username);
+            throw new UsernameNotFoundException("用户不存在");
         }
-        
-        // 获取用户权限
+
+        // 2. 获取权限 (保持你原有的逻辑)
         List<GrantedAuthority> authorities = getUserAuthority(user.getId());
-        
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .authorities(authorities)
-                .accountExpired(false)  // 账户未过期
-                .accountLocked(false)   // 账户未锁定
-                .credentialsExpired(false) // 凭证未过期
-                .disabled(user.getStatus() == 0) // 状态为0表示启用
-                .build();
+
+        // 3. 【关键修改】返回自定义的 CustomUserDetails
+        return new CustomUserDetails(user, authorities);
     }
     
     private List<GrantedAuthority> getUserAuthority(Long userId) {

@@ -7,9 +7,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface DocumentService extends IService<Document> {
-    Document uploadAndSave(MultipartFile file, Long kbId);
+    Document uploadAndSave(MultipartFile file, Long kbId, Long parentId);
 
     // 根据知识库ID获取文档列表
     List<Document> getListByKbId(Long kbId);
+
+    public boolean deleteDocument(Long id);
 
 }

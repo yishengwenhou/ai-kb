@@ -1,5 +1,9 @@
 package com.itpan.backend.controller;
 
+import com.itpan.backend.model.entity.User;
+import com.itpan.backend.service.UserService;
+import com.itpan.backend.util.UserContext;
+import jakarta.annotation.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,25 +19,24 @@ import java.util.Map;
 @RequestMapping("/api/user")
 public class UserController {
 
+    @Resource
+    private UserService userService;
+
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Map<String, Object> response = new HashMap<>();
-        response.put("username", authentication.getName());
-        response.put("authorities", authentication.getAuthorities());
-        response.put("authenticated", authentication.isAuthenticated());
-        
-        return ResponseEntity.ok(response);
+        String username = UserContext.getCurrentUser().getUsername();
+        User user = userService.getUserByUsername(username);
+        return ResponseEntity.ok(user);
     }
 
    @PostMapping("/update")
     public ResponseEntity<?> updateUser() {
-        return null;
+        return ResponseEntity.status(501).body("暂未开放该接口");
     }
 
     @PostMapping("/delete")
     public ResponseEntity<?> deleteUser() {
-        return null;
+        return ResponseEntity.status(501).body("暂未开放该接口");
     }
 
 }

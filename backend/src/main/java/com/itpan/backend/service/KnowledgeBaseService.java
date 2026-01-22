@@ -8,12 +8,12 @@ import java.util.List;
 public interface KnowledgeBaseService extends IService<KnowledgeBase> {
     /**
      * 分页查询知识库列表
-     * @param name 知识库名称（可选，用于模糊查询）
+     * @param keyword 知识库名称（可选，用于模糊查询）
      * @param pageNum 页码
      * @param pageSize 页面大小
      * @return 知识库列表
      */
-    List<KnowledgeBase> listKnowledgeBases(String name, int pageNum, int pageSize);
+    List<KnowledgeBase> listKnowledgeBases(String keyword, Long deptId, int pageNum, int pageSize);
 
     /**
      * 根据ID获取知识库详情
@@ -48,5 +48,5 @@ public interface KnowledgeBaseService extends IService<KnowledgeBase> {
      * @param kbId 知识库ID
      * @return 文档列表
      */
-    List<Document> getDocuments(Long kbId);
+    List<Document> getDocuments(Long kbId,String keyword);
 }
