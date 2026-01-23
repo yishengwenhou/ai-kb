@@ -26,14 +26,9 @@ public class DepartmentController {
      * 获取部门列表（支持树形结构）
      */
     @GetMapping
-    public ResponseEntity<?> listDepartments(@RequestParam(required = false) Long parentId) {
+    public ResponseEntity<List<DepartmentVo>> listDepartments(@RequestParam(required = false) Long parentId) {
         List<DepartmentVo> departments = departmentService.getDepartmentTree(parentId);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", departments);
-        response.put("success", true);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(departments);
     }
 
     /**

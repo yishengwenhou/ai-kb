@@ -1,5 +1,6 @@
 package com.itpan.backend.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.model.entity.KnowledgeBase;
@@ -48,5 +49,5 @@ public interface KnowledgeBaseService extends IService<KnowledgeBase> {
      * @param kbId 知识库ID
      * @return 文档列表
      */
-    List<Document> getDocuments(Long kbId,String keyword);
+    IPage<Document> getDocuments(Long kbId, String keyword, int pageNum, int pageSize);
 }

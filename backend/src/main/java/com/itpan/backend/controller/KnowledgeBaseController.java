@@ -1,5 +1,6 @@
 package com.itpan.backend.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.model.entity.KnowledgeBase;
 import com.itpan.backend.service.KnowledgeBaseService;
@@ -60,17 +61,18 @@ public class KnowledgeBaseController {
     /**
      * 获取知识库下的文档列表
      * @param id 知识库ID
+     * @param keyword 关键词
+     * @param pageNum 页码
+     * @param pageSize 页大小
      * @return
      */
     @GetMapping("/{id}/documents")
-    public ResponseEntity<?> getDocuments(@PathVariable Long id,@RequestParam(required = false) String keyword) {
-        List<Document> documents = knowledgeBaseService.getDocuments(id,keyword);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", documents);
-        response.put("success", true);
-
-        return ResponseEntity.ok(response);
+    public ResponseEntity<IPage<Document>> getDocuments(@PathVariable Long id,
+                                          @RequestParam(required = false) String keyword,
+                                          @RequestParam(defaultValue = "1") int pageNum,
+                                          @RequestParam(defaultValue = "10") int pageSize) {
+        IPage<Document> documents = knowledgeBaseService.getDocuments(id,keyword,pageNum, pageSize);
+        return ResponseEntity.ok(documents);
     }
 
 

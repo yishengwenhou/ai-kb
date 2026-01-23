@@ -2,6 +2,8 @@ package com.itpan.backend.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.itpan.backend.model.entity.Document;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -12,6 +14,11 @@ public interface DocumentService extends IService<Document> {
     // 根据知识库ID获取文档列表
     List<Document> getListByKbId(Long kbId);
 
-    public boolean deleteDocument(Long id);
+    boolean deleteDocument(Long id);
+
+    record PreviewResult(String fileName, byte[] bytes, MediaType mediaType) {
+    }
+
+    PreviewResult preview(Long id);
 
 }

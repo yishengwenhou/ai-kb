@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.UnsupportedEncodingException;
+
 
 @RestController
 @RequestMapping("/api/doc")
@@ -82,41 +84,15 @@ public class DocumentController {
     }
 
     @GetMapping("/preview/{id}")
-    public ResponseEntity<byte[]> preview(@PathVariable Long id) {
-        Document doc = documentService.getById(id);
-        if (doc == null) return ResponseEntity.notFound().build();
+    public ResponseEntity<byte[]> preview(@PathVariable Long id) throws UnsupportedEncodingException {
 
-        try {
-            // 1. 下载文件流
-            java.io.InputStream inputStream = ossUtil.download(doc.getFilePath());
-            byte[] bytes = inputStream.readAllBytes();
-            inputStream.close();
+        DocumentService.PreviewResult result = documentService.preview(id);
 
-            // 2. 猜测文件类型 (MIME Type)
-            String ext = doc.getFileType().toLowerCase();
-            MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
-
-            // 根据后缀设置正确的 MIME，这样浏览器才知道怎么渲染
-            if ("pdf".equals(ext)) {
-                mediaType = MediaType.APPLICATION_PDF;
-            } else if ("jpg".equals(ext) || "jpeg".equals(ext)) {
-                mediaType = MediaType.IMAGE_JPEG;
-            } else if ("png".equals(ext)) {
-                mediaType = MediaType.IMAGE_PNG;
-            } else if ("txt".equals(ext)) {
-                mediaType = MediaType.TEXT_PLAIN;
-            }
-
-            // 3. 返回响应 (inline 表示在线显示)
-            return ResponseEntity.ok()
-                    .contentType(mediaType)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" +
-                            java.net.URLEncoder.encode(doc.getFileName(), "UTF-8") + "\"")
-                    .body(bytes);
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+        return ResponseEntity.ok()
+                .contentType(result.mediaType())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" +
+                        java.net.URLEncoder.encode(result.fileName(), "UTF-8") + "\"")
+                .body(result.bytes());
     }
 
 

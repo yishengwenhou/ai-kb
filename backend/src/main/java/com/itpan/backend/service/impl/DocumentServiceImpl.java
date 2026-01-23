@@ -8,6 +8,9 @@ import com.itpan.backend.service.DocumentService;
 import com.itpan.backend.util.OssUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.DigestUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -140,4 +143,38 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
                 .orderByDesc(Document::getCreateTime));
     }
 
+
+    @Override
+    public PreviewResult preview(Long id) {
+        Document doc = baseMapper.selectById(id);
+        if (doc == null) throw new RuntimeException("文件不存在");
+
+        try {
+            // 1. 下载文件流
+            java.io.InputStream inputStream = ossUtil.download(doc.getFilePath());
+            byte[] bytes = inputStream.readAllBytes();
+            inputStream.close();
+
+            // 2. 猜测文件类型 (MIME Type)
+            String ext = doc.getFileType().toLowerCase();
+            MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+
+            // 根据后缀设置正确的 MIME，这样浏览器才知道怎么渲染
+            if ("pdf".equals(ext)) {
+                mediaType = MediaType.APPLICATION_PDF;
+            } else if ("jpg".equals(ext) || "jpeg".equals(ext)) {
+                mediaType = MediaType.IMAGE_JPEG;
+            } else if ("png".equals(ext)) {
+                mediaType = MediaType.IMAGE_PNG;
+            } else if ("txt".equals(ext)) {
+                mediaType = MediaType.TEXT_PLAIN;
+            }
+
+            // 3. 返回响应 (inline 表示在线显示)
+            return new PreviewResult(doc.getFileName(), bytes, mediaType);
+
+        } catch (Exception e) {
+            throw new RuntimeException("文件处理失败", e);
+        }
+    }
 }

@@ -27,7 +27,7 @@ public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, K
     public List<KnowledgeBase> listKnowledgeBases(String keyword, Long deptId, int pageNum, int pageSize) {
 
         Long userDeptId = UserContext.getDeptId();
-        if(!userDeptId.equals(deptId)) return List.of();
+//        if(!userDeptId.equals(deptId)) return List.of();
 
         Long userId = UserContext.getUserId();
 
@@ -75,13 +75,15 @@ public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, K
     }
 
     @Override
-    public List<Document> getDocuments(Long kbId,String keyword) {
+    public IPage<Document> getDocuments(Long kbId,String keyword, int pageNum, int pageSize) {
         List<Document> documents = documentMapper.selectList(
                 new LambdaQueryWrapper<Document>()
                         .eq(Document::getKbId, kbId)
                         .like(StringUtils.hasText(keyword),Document::getFileName,keyword)
                         .orderByDesc(Document::getCreateTime)
         );
-        return documents;
+        Page<Document> page = new Page<>(pageNum, pageSize);
+        IPage<Document> result = documentMapper.selectPage(page, new LambdaQueryWrapper<Document>());
+        return result;
     }
 }

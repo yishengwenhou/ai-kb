@@ -17,4 +17,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
         return user;
     }
+
+    @Override
+    public User updateUser(User user) {
+        baseMapper.updateById(user);
+        return user;
+    }
+
+    @Override
+    public Boolean deleteUser(Long id) {
+        return baseMapper.deleteById(id)>0;
+    }
 }

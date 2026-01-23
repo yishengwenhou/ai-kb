@@ -29,6 +29,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         // 将部门实体转换为VO并构建树形结构
         return departments.stream().map(dept -> {
             DepartmentVo vo = DepartmentVo.builder()
+                    .id(dept.getId())
                     .parentId(dept.getParentId())
                     .deptName(dept.getDeptName())
                     .sort(dept.getSort())

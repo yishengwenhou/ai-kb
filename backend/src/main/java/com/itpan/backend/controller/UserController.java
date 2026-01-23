@@ -1,5 +1,8 @@
 package com.itpan.backend.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itpan.backend.model.entity.User;
 import com.itpan.backend.service.UserService;
 import com.itpan.backend.util.UserContext;
@@ -7,12 +10,11 @@ import jakarta.annotation.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,6 +24,9 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private PasswordEncoder passwordEncoder;
+
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile() {
         String username = UserContext.getCurrentUser().getUsername();
@@ -29,9 +34,37 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    @GetMapping("/list")
+    public ResponseEntity<?> listUser(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize
+    ) {
+        Page< User> page = new Page<>(pageNum, pageSize);
+        List< User> result = userService.list(page,
+                new LambdaQueryWrapper< User>()
+                        .like(User::getUsername, keyword)
+                        .or()
+                        .like(User::getRealName, keyword)
+        );
+        return ResponseEntity.ok(result);
+    }
+
    @PostMapping("/update")
-    public ResponseEntity<?> updateUser() {
-        return ResponseEntity.status(501).body("暂未开放该接口");
+    public ResponseEntity<?> updateUser(@RequestParam("user") User user) {
+       User user1 = userService.updateUser(user);
+       return ResponseEntity.ok(user1);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestParam("username") String username) {
+        User user = userService.getUserByUsername(username);
+        if (user == null) {
+            return ResponseEntity.status(400).body("用户不存在");
+        }
+        user.setPassword(passwordEncoder.encode("1234567"));
+        userService.updateById(user);
+        return ResponseEntity.ok("密码已重置为：123456");
     }
 
     @PostMapping("/delete")
