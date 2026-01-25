@@ -177,4 +177,19 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
             throw new RuntimeException("文件处理失败", e);
         }
     }
+
+    @Override
+    public downloadResult download(Long id) {
+        Document document = baseMapper.selectById(id);
+        if (document == null) throw new RuntimeException("文件不存在");
+        try {
+            java.io.InputStream inputStream = ossUtil.download(document.getFilePath());
+            byte[] bytes = inputStream.readAllBytes();
+            inputStream.close();
+
+            return new downloadResult(document.getFileName(), bytes);
+        } catch (Exception e) {
+            throw new RuntimeException("文件处理失败", e);
+        }
+    }
 }

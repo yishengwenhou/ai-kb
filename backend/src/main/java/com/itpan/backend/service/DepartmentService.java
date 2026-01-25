@@ -1,7 +1,9 @@
 package com.itpan.backend.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.itpan.backend.model.entity.Department;
+import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.model.vo.DepartmentVo;
 
 import java.util.List;
@@ -48,4 +50,6 @@ public interface DepartmentService extends IService<Department> {
      * @return 子部门数量
      */
     Long checkChildrenExist(Long id);
+
+    IPage<DepartmentVo> getPageList(String keyword, Long pageNum, Long pageSize);
 }

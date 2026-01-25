@@ -17,6 +17,9 @@ public class User extends BaseEntity {
     @TableField(value = "phone")
     private String phone;     // 手机号
 
+    @TableField(value = "email")
+    private String email;
+
     @TableField(value = "gender")
     private Integer gender;
     

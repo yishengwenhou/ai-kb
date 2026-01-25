@@ -27,22 +27,10 @@ public class Department extends BaseEntity {
 
     /** 负责人 */
     @TableField("leader")
-    private String leader;
-
-    /** 联系电话 */
-    @TableField("phone")
-    private String phone;
-
-    /** 邮箱 */
-    @TableField("email")
-    private String email;
+    private Long leader;
 
     /** 部门状态 (0-正常, 1-停用) */
     @TableField("status")
     private Integer status;
 
-    // 下面这两个字段数据库里没有，但前端做树形展示时非常有用
-    // 使用 @TableField(exist = false) 告诉 MyBatis-Plus 忽略它们
-    // @TableField(exist = false)
-    // private List<Department> children;
 }

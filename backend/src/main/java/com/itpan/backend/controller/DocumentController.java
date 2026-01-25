@@ -49,23 +49,14 @@ public class DocumentController {
      * 优化：参数改为 id，通过 ID 查 URL，防止恶意用户随便传 URL 下载非本文档的文件
      */
     @GetMapping("/download/{id}")
-    public ResponseEntity<byte[]> download(@PathVariable Long id) {
-        Document doc = documentService.getById(id);
-        if (doc == null) return ResponseEntity.notFound().build();
+    public ResponseEntity<byte[]> download(@PathVariable Long id) throws UnsupportedEncodingException {
 
-        try {
-            java.io.InputStream inputStream = ossUtil.download(doc.getFilePath());
-            byte[] bytes = inputStream.readAllBytes();
-            inputStream.close();
+        DocumentService.downloadResult doc = documentService.download(id);
 
-            // 设置响应头，强制浏览器下载
-            return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=\"" +
-                            java.net.URLEncoder.encode(doc.getFileName(), "UTF-8") + "\"")
-                    .body(bytes);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"" +
+                        java.net.URLEncoder.encode(doc.fileName(), "UTF-8") + "\"")
+                .body(doc.bytes());
     }
 
     /**

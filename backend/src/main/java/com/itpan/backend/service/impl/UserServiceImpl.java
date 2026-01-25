@@ -1,12 +1,15 @@
 package com.itpan.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itpan.backend.mapper.UserMapper;
 import com.itpan.backend.model.entity.User;
 import com.itpan.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -27,5 +30,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public Boolean deleteUser(Long id) {
         return baseMapper.deleteById(id)>0;
+    }
+
+    @Override
+    public IPage<User> getPageList(String keyword, Integer pageNum, Integer pageSize) {
+        Page<User> page = new Page<>(pageNum, pageSize);
+        IPage<User> userPage = baseMapper.selectPage(page, new LambdaQueryWrapper<User>().like(StringUtils.hasText(keyword),User::getRealName, keyword));
+        return userPage;
     }
 }

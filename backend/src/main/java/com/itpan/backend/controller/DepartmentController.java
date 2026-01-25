@@ -1,5 +1,6 @@
 package com.itpan.backend.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.itpan.backend.model.entity.Department;
 import com.itpan.backend.model.vo.DepartmentVo;
 import com.itpan.backend.service.DepartmentService;
@@ -31,23 +32,21 @@ public class DepartmentController {
         return ResponseEntity.ok(departments);
     }
 
+    @GetMapping("/list")
+    public ResponseEntity<IPage<DepartmentVo>> list(@RequestParam(required = false) String  keyword,
+                                                  @RequestParam Long pageNum,
+                                                  @RequestParam Long pageSize) {
+        IPage<DepartmentVo> departments = departmentService.getPageList(keyword, pageNum, pageSize);
+        return ResponseEntity.ok(departments);
+    }
+
     /**
      * 根据ID获取部门详情
      */
     @GetMapping("/{id}")
     public ResponseEntity<?> getDepartment(@PathVariable Long id) {
         Department department = departmentService.getDepartmentById(id);
-
-        if (department == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", "部门不存在", "success", false));
-        }
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", department);
-        response.put("success", true);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(department);
     }
 
     /**
@@ -55,27 +54,8 @@ public class DepartmentController {
      */
     @PostMapping
     public ResponseEntity<?> createDepartment(@Valid @RequestBody Department department) {
-        // 设置初始状态值
-        if (department.getStatus() == null) {
-            department.setStatus(0); // 默认正常状态
-        }
-        if (department.getSort() == null) {
-            department.setSort(0); // 默认排序
-        }
-
-        boolean success = departmentService.createDepartment(department);
-
-        if (success) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", department);
-            response.put("message", "创建成功");
-            response.put("success", true);
-
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "创建失败", "success", false));
-        }
+        boolean result = departmentService.createDepartment(department);
+        return ResponseEntity.ok(result);
     }
 
     /**

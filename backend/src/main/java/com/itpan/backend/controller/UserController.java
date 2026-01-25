@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -35,19 +36,13 @@ public class UserController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<?> listUser(
+    public ResponseEntity<IPage<User>> listUser(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize
     ) {
-        Page< User> page = new Page<>(pageNum, pageSize);
-        List< User> result = userService.list(page,
-                new LambdaQueryWrapper< User>()
-                        .like(User::getUsername, keyword)
-                        .or()
-                        .like(User::getRealName, keyword)
-        );
-        return ResponseEntity.ok(result);
+        IPage<User> pageList = userService.getPageList(keyword, pageNum, pageSize);
+        return ResponseEntity.ok(pageList);
     }
 
    @PostMapping("/update")

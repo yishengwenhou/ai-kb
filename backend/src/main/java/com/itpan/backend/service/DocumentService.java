@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.itpan.backend.model.entity.Document;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -20,5 +21,9 @@ public interface DocumentService extends IService<Document> {
     }
 
     PreviewResult preview(Long id);
+
+    record downloadResult(String fileName, byte[] bytes) {
+    }
+    downloadResult download(Long id);
 
 }
