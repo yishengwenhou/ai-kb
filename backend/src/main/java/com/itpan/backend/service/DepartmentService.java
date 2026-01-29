@@ -31,20 +31,6 @@ public interface DepartmentService extends IService<Department> {
     boolean createDepartment(Department department);
 
     /**
-     * 更新部门
-     * @param department 部门实体
-     * @return 是否更新成功
-     */
-    boolean updateDepartment(Department department);
-
-    /**
-     * 删除部门
-     * @param id 部门ID
-     * @return 是否删除成功
-     */
-    boolean deleteDepartment(Long id);
-
-    /**
      * 检查部门是否存在子部门
      * @param id 部门ID
      * @return 子部门数量
@@ -52,4 +38,8 @@ public interface DepartmentService extends IService<Department> {
     Long checkChildrenExist(Long id);
 
     IPage<DepartmentVo> getPageList(String keyword, Long pageNum, Long pageSize);
+
+    boolean deleteDept(Long id);
+
+    Department updateDept(Department department);
 }

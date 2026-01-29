@@ -35,6 +35,56 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@RequestBody User updateData) {
+        User currentUser = UserContext.getCurrentUser();
+        User user = userService.getById(currentUser.getId());
+        if (user == null) {
+            return ResponseEntity.status(404).body("用户不存在");
+        }
+
+        // 更新可修改的字段
+        if (StringUtils.hasText(updateData.getRealName())) {
+            user.setRealName(updateData.getRealName());
+        }
+        if (StringUtils.hasText(updateData.getEmail())) {
+            user.setEmail(updateData.getEmail());
+        }
+        if (StringUtils.hasText(updateData.getPhone())) {
+            user.setPhone(updateData.getPhone());
+        }
+
+        userService.updateById(user);
+        return ResponseEntity.ok(user);
+    }
+
+    @PutMapping("/password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> passwordData) {
+        String oldPassword = passwordData.get("oldPassword");
+        String newPassword = passwordData.get("newPassword");
+
+        if (!StringUtils.hasText(oldPassword) || !StringUtils.hasText(newPassword)) {
+            return ResponseEntity.status(400).body("参数不能为空");
+        }
+
+        User currentUser = UserContext.getCurrentUser();
+        User user = userService.getById(currentUser.getId());
+        if (user == null) {
+            return ResponseEntity.status(404).body("用户不存在");
+        }
+
+        // 验证原密码
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            return ResponseEntity.status(400).body("原密码不正确");
+        }
+
+        // 更新新密码
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userService.updateById(user);
+
+        return ResponseEntity.ok("密码修改成功");
+    }
+
     @GetMapping("/list")
     public ResponseEntity<IPage<User>> listUser(
             @RequestParam(required = false) String keyword,

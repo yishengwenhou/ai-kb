@@ -45,7 +45,7 @@ public class AuthController {
     
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
-        TokenVo tokenVo = request.tokenVo();
-        return authService.refreshToken(tokenVo.refreshToken());
+        TokenVo tokenVo = request.getTokenVo();
+        return authService.refreshToken(tokenVo.getRefreshToken());
     }
 }

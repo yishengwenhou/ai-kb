@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,23 +72,6 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     }
 
     @Override
-    public boolean updateDepartment(Department department) {
-        return baseMapper.updateById(department) > 0;
-    }
-
-    @Override
-    public boolean deleteDepartment(Long id) {
-        // 检查是否存在子部门
-        Long childrenCount = checkChildrenExist(id);
-        if (childrenCount > 0) {
-            throw new RuntimeException("该部门下仍有 " + childrenCount + " 个子部门，请先清空子部门后再删除部门！");
-        }
-
-        // 执行删除
-        return baseMapper.deleteById(id) > 0;
-    }
-
-    @Override
     public Long checkChildrenExist(Long id) {
         return baseMapper.selectCount(
                 new LambdaQueryWrapper<Department>().eq(Department::getParentId, id)
@@ -131,5 +115,15 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         });
         
         return departmentVoPage;
+    }
+
+    @Override
+    public Department updateDept(Department department) {
+        return baseMapper.updateById(department) > 0 ? department : null;
+    }
+
+    @Override
+    public boolean deleteDept(Long id) {
+        return false;
     }
 }

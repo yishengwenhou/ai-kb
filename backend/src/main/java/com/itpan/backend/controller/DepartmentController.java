@@ -6,14 +6,12 @@ import com.itpan.backend.model.vo.DepartmentVo;
 import com.itpan.backend.service.DepartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/dept")
@@ -63,22 +61,9 @@ public class DepartmentController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<?> updateDepartment(@PathVariable Long id, @Valid @RequestBody Department department) {
-        // 确保ID匹配
-        department.setId(id);
 
-        boolean success = departmentService.updateDepartment(department);
-
-        if (success) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", department);
-            response.put("message", "更新成功");
-            response.put("success", true);
-
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "更新失败", "success", false));
-        }
+        Department department1 = departmentService.updateDept(department);
+        return ResponseEntity.ok(department1);
     }
 
     /**
@@ -86,17 +71,7 @@ public class DepartmentController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteDepartment(@PathVariable Long id) {
-        boolean success = departmentService.deleteDepartment(id);
-
-        if (success) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "删除成功");
-            response.put("success", true);
-
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "删除失败", "success", false));
-        }
+        boolean success = departmentService.deleteDept(id);
+        return ResponseEntity.ok(success);
     }
 }

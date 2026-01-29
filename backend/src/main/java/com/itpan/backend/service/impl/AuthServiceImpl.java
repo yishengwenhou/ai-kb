@@ -30,14 +30,13 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
-;
     @Override
     public ResponseEntity<?> login(LoginRequest loginRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.username(),
-                            loginRequest.password()
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()
                     )
             );
 
@@ -69,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean register(RegisterRequest registerRequest) {
         // 检查用户名是否已存在
-        User existingUser = userService.getUserByUsername(registerRequest.userName());
+        User existingUser = userService.getUserByUsername(registerRequest.getUserName());
 
         if (existingUser != null) {
             throw new RuntimeException("用户名已存在");
@@ -77,9 +76,9 @@ public class AuthServiceImpl implements AuthService {
 
         // 创建新用户
         User user = User.builder()
-                .username(registerRequest.userName())
-                .password(passwordEncoder.encode(registerRequest.password()))
-                .realName(registerRequest.realName())
+                .username(registerRequest.getUserName())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .realName(registerRequest.getRealName())
                 .status(0)
                 .build();
 

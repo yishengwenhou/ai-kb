@@ -25,18 +25,13 @@ public class KnowledgeBaseController {
      */
     @GetMapping
     public ResponseEntity<?> listKnowledgeBases(
+            @RequestParam(required = false) String scope,
             @RequestParam(required = false) String keyword,
-            @RequestParam Long deptId,
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize) {
-        
-        List<KnowledgeBase> knowledgeBases = knowledgeBaseService.listKnowledgeBases(keyword, deptId, pageNum, pageSize);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", knowledgeBases);
-        response.put("success", true);
-        
-        return ResponseEntity.ok(response);
+
+        IPage<KnowledgeBase> knowledgeBases = knowledgeBaseService.listKnowledgeBases(scope, keyword, pageNum, pageSize);
+        return ResponseEntity.ok(knowledgeBases);
     }
 
     /**
@@ -80,7 +75,7 @@ public class KnowledgeBaseController {
      * 创建知识库
      */
     @PostMapping
-    public ResponseEntity<?> createKnowledgeBase(@RequestBody KnowledgeBase knowledgeBase) {
+    public ResponseEntity<?> createKnowledgeBase(@RequestParam("scope") String scope, @RequestBody KnowledgeBase knowledgeBase) {
         // 设置初始状态值
         if (knowledgeBase.getStatus() == null) {
             knowledgeBase.setStatus(0); // 默认就绪状态
@@ -89,7 +84,7 @@ public class KnowledgeBaseController {
             knowledgeBase.setVisibility(0); // 默认私有
         }
         
-        boolean success = knowledgeBaseService.createKnowledgeBase(knowledgeBase);
+        boolean success = knowledgeBaseService.createKnowledgeBase(knowledgeBase,scope);
         
         if (success) {
             Map<String, Object> response = new HashMap<>();

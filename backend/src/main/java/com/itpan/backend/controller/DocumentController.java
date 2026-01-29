@@ -6,7 +6,6 @@ import com.itpan.backend.service.impl.DocumentAsyncServiceImpl;
 import com.itpan.backend.util.OssUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -114,11 +113,9 @@ public class DocumentController {
     public ResponseEntity<?> delete(@PathVariable Long id) {
         // 调用 Service 层的完整逻辑
         boolean success = documentService.deleteDocument(id);
-
         if (success) {
             return ResponseEntity.ok("删除成功");
         } else {
-            // 如果 Service 返回 false，说明 ID 不存在，返回 404 是合理的
             return ResponseEntity.notFound().build();
         }
     }

@@ -1,4 +1,13 @@
 package com.itpan.backend.model.vo;
 
-public record TokenVo(String accessToken, String refreshToken) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class TokenVo {
+    private String accessToken;
+    private String refreshToken;
 }

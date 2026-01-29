@@ -34,4 +34,7 @@ public class User extends BaseEntity {
     
     @TableField(value = "status")
     private Integer status;   // 状态 (0-启用, 1-禁用)
+
+    @TableField(value = "avatar_url")
+    private String avatarUrl; // 头像URL
 }

@@ -1,7 +1,13 @@
 package com.itpan.backend.model.dto;
 
 import com.itpan.backend.model.vo.TokenVo;
-import jdk.nashorn.internal.parser.Token;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record RefreshTokenRequest(TokenVo tokenVo) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class RefreshTokenRequest {
+    private TokenVo tokenVo;
 }
