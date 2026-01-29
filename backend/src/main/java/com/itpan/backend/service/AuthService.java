@@ -1,7 +1,7 @@
 package com.itpan.backend.service;
 
-import com.itpan.backend.model.dto.LoginRequest;
-import com.itpan.backend.model.dto.RegisterRequest;
+import com.itpan.backend.model.dto.auth.LoginRequest;
+import com.itpan.backend.model.dto.auth.RegisterRequest;
 import org.springframework.http.ResponseEntity;
 
 public interface AuthService {

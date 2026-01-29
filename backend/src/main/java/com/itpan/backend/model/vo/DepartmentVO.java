@@ -1,18 +1,16 @@
 package com.itpan.backend.model.vo;
 
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.itpan.backend.model.entity.Department;
 import com.itpan.backend.model.entity.User;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
 @Data
 @Builder
-public class DepartmentVo {
+@AllArgsConstructor
+@NoArgsConstructor
+public class DepartmentVO {
 
     private Long id;
 
@@ -26,5 +24,5 @@ public class DepartmentVo {
 
     private Integer sort;
 
-    private List<Department> children;
+    private List<DepartmentVO> children;
 }

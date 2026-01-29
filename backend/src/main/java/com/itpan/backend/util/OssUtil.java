@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
@@ -36,20 +37,20 @@ public class OssUtil {
      * @param expirationSeconds 过期时间(秒)，例如 3600 代表1小时
      * @return 带签名的URL
      */
-    public String getPrivateUrl(String objectName, int expirationSeconds) {
-        // 如果传进来的是完整URL，先提取出 ObjectName (你现有的方法)
-        if (objectName.startsWith("http")) {
-            objectName = extractObjectNameFromUrl(objectName);
-        }
+//    public String getPrivateUrl(String objectName, int expirationSeconds) {
+//        // 如果传进来的是完整URL，先提取出 ObjectName (你现有的方法)
+//        if (objectName.startsWith("http")) {
+//            objectName = extractObjectNameFromUrl(objectName);
+//        }
+//
+//        Date expiration = new Date(System.currentTimeMillis() + expirationSeconds * 1000L);
+//        // 生成签名URL
+//        java.net.URL url = ossClient.generatePresignedUrl(ossConfig.getBucketName(), objectName, expiration);
+//
+//        return url.toString();
+//    }
 
-        Date expiration = new Date(System.currentTimeMillis() + expirationSeconds * 1000L);
-        // 生成签名URL
-        java.net.URL url = ossClient.generatePresignedUrl(ossConfig.getBucketName(), objectName, expiration);
-
-        return url.toString();
-    }
-
-    public String upload(InputStream inputStream, String fileName) {
+    public String upload(String bucketName, InputStream inputStream, String fileName) {
         try {
             String ext = fileName.substring(fileName.lastIndexOf("."));
             String objectName = "uploads/" +
@@ -57,38 +58,26 @@ public class OssUtil {
                     UUID.randomUUID().toString().replace("-", "") + ext;
 
             PutObjectRequest request = new PutObjectRequest(
-                    ossConfig.getBucketName(),
+                    bucketName, // 使用传入的 bucket
                     objectName,
                     inputStream);
 
             ossClient.putObject(request);
-            return "https://" + ossConfig.getBucketName() + "." + ossConfig.getEndpoint() + "/" + objectName;
-        } catch (OSSException e) {
-            log.error("OSS上传失败 - 错误码: {}, 错误信息: {}", e.getErrorCode(), e.getMessage());
-            throw new RuntimeException("文件上传失败: " + e.getErrorCode() + " - " + e.getMessage(), e);
-        } catch (ClientException e) {
-            log.error("OSS客户端错误 - 请求ID: {}, 错误信息: {}", e.getRequestId(), e.getMessage());
-            throw new RuntimeException("文件上传失败: 客户端错误 - " + e.getMessage(), e);
+            return "https://" + bucketName + "." + ossConfig.getEndpoint() + "/" + objectName;
         } catch (Exception e) {
-            log.error("OSS上传发生未知错误", e);
+            log.error("OSS上传失败", e);
             throw new RuntimeException("文件上传失败: " + e.getMessage(), e);
         }
     }
 
-    public void delete(String url) {
+    public void delete(String fileUrl) {
         try {
-            // 从URL中提取对象名称，移除域名部分
-            String objectName = extractObjectNameFromUrl(url);
-            ossClient.deleteObject(ossConfig.getBucketName(), objectName);
-        } catch (OSSException e) {
-            log.error("OSS删除失败 - 错误码: {}, 错误信息: {}", e.getErrorCode(), e.getMessage());
-            throw new RuntimeException("文件删除失败: " + e.getErrorCode() + " - " + e.getMessage(), e);
-        } catch (ClientException e) {
-            log.error("OSS客户端错误 - 请求ID: {}, 错误信息: {}", e.getRequestId(), e.getMessage());
-            throw new RuntimeException("文件删除失败: 客户端错误 - " + e.getMessage(), e);
+            String bucketName = getBucketNameFromUrl(fileUrl);
+            String objectName = getObjectNameFromUrl(fileUrl);
+            ossClient.deleteObject(bucketName, objectName);
         } catch (Exception e) {
-            log.error("OSS删除发生未知错误", e);
-            throw new RuntimeException("文件删除失败: " + e.getMessage(), e);
+            log.error("OSS删除失败", e);
+            throw new RuntimeException("文件删除失败", e);
         }
     }
 
@@ -108,20 +97,33 @@ public class OssUtil {
         return url.substring(url.lastIndexOf("/") + 1);
     }
 
-    public InputStream download(String url) {
+    public InputStream download(String fileUrl) {
         try {
-            // 从URL中提取对象名称，移除域名部分
-            String objectName = extractObjectNameFromUrl(url);
-            return ossClient.getObject(ossConfig.getBucketName(), objectName).getObjectContent();
-        } catch (OSSException e) {
-            log.error("OSS下载失败 - 错误码: {}, 错误信息: {}", e.getErrorCode(), e.getMessage());
-            throw new RuntimeException("文件下载失败: " + e.getErrorCode() + " - " + e.getMessage(), e);
-        } catch (ClientException e) {
-            log.error("OSS客户端错误 - 请求ID: {}, 错误信息: {}", e.getRequestId(), e.getMessage());
-            throw new RuntimeException("文件下载失败: 客户端错误 - " + e.getMessage(), e);
+            String bucketName = getBucketNameFromUrl(fileUrl);
+            String objectName = getObjectNameFromUrl(fileUrl);
+            return ossClient.getObject(bucketName, objectName).getObjectContent();
         } catch (Exception e) {
-            log.error("OSS下载发生未知错误", e);
-            throw new RuntimeException("文件下载失败: " + e.getMessage(), e);
+            log.error("OSS下载失败", e);
+            throw new RuntimeException("文件下载失败", e);
+        }
+    }
+
+    private String getBucketNameFromUrl(String fileUrl) {
+        try {
+            URL url = new URL(fileUrl);
+            String host = url.getHost();
+            return host.substring(0, host.indexOf("."));
+        } catch (Exception e) {
+            throw new IllegalArgumentException("无法从URL解析Bucket名称: " + fileUrl);
+        }
+    }
+
+    private String getObjectNameFromUrl(String fileUrl) {
+        try {
+            URL url = new URL(fileUrl);
+            return url.getPath().substring(1);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("无法从URL解析对象名称: " + fileUrl);
         }
     }
 }

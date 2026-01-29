@@ -1,4 +1,4 @@
-package com.itpan.backend.dto;
+package com.itpan.backend.model.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterRequest {
-    private String username;
+    private String userName;
     private String password;
     private String realName;
 }

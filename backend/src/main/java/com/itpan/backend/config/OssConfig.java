@@ -11,6 +11,4 @@ public class OssConfig {
     private String endpoint;
     private String accessKeyId;
     private String accessKeySecret;
-    private String bucketName;
-
 }

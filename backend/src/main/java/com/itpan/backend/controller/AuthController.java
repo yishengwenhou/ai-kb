@@ -1,10 +1,10 @@
 package com.itpan.backend.controller;
 
 
-import com.itpan.backend.model.dto.RefreshTokenRequest;
-import com.itpan.backend.model.dto.LoginRequest;
-import com.itpan.backend.model.dto.RegisterRequest;
-import com.itpan.backend.model.vo.TokenVo;
+import com.itpan.backend.model.dto.auth.RefreshTokenRequest;
+import com.itpan.backend.model.dto.auth.LoginRequest;
+import com.itpan.backend.model.dto.auth.RegisterRequest;
+import com.itpan.backend.model.vo.TokenVO;
 import com.itpan.backend.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +45,7 @@ public class AuthController {
     
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
-        TokenVo tokenVo = request.getTokenVo();
+        TokenVO tokenVo = request.getTokenVo();
         return authService.refreshToken(tokenVo.getRefreshToken());
     }
 }

@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itpan.backend.common.enums.KBOwnerType;
 import com.itpan.backend.mapper.DocumentMapper;
 import com.itpan.backend.mapper.KnowledgeBaseMapper;
+import com.itpan.backend.model.dto.KnowledgeBaseCreateDTO;
+import com.itpan.backend.model.dto.KnowledgeBaseUpdateDTO;
 import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.model.entity.KnowledgeBase;
 import com.itpan.backend.service.KnowledgeBaseService;
@@ -54,7 +56,7 @@ public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, K
                 // 方案A：只查企业级知识库 (owner_type=30)
                 // query.eq(KnowledgeBase::getOwnerType, KBOwnerType.ENTERPRISE.getCode());
 
-                // 方案B (推荐)：查所有 owner_type=30 的 + 其他空间里设为“公开”的
+                // 方案B (推荐)：查所有 owner_type=30 的 + 其他空间里设为"公开"的
                 query.and(wrapper -> wrapper
                         .eq(KnowledgeBase::getOwnerType, KBOwnerType.ENTERPRISE.getCode())
                         .or()
@@ -97,8 +99,74 @@ public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, K
     }
 
     @Override
+    public KnowledgeBase createKnowledgeBaseFromDTO(KnowledgeBaseCreateDTO createDTO, String scope) {
+        Long userId = UserContext.getUserId();
+        Long deptId = UserContext.getDeptId();
+
+        KnowledgeBase knowledgeBase = KnowledgeBase.builder()
+                .name(createDTO.getName())
+                .description(createDTO.getDescription())
+                .introduction(createDTO.getIntroduction())
+                .coverUrl(createDTO.getCoverUrl())
+                .remark(createDTO.getRemark())
+                .visibility(createDTO.getVisibility())
+                .ownerType(createDTO.getOwnerType())
+                .ownerId(createDTO.getOwnerId())
+                .status(0) // 默认就绪状态
+                .build();
+
+        // 设置归属
+        if ("mine".equals(scope)) {
+            knowledgeBase.setOwnerType(KBOwnerType.PERSONAL.getCode());
+            knowledgeBase.setOwnerId(userId);
+        } else if ("dept".equals(scope)) {
+            knowledgeBase.setOwnerType(KBOwnerType.DEPARTMENT.getCode());
+            knowledgeBase.setOwnerId(deptId);
+        } else if ("public".equals(scope)) {
+            knowledgeBase.setOwnerType(KBOwnerType.ENTERPRISE.getCode());
+            knowledgeBase.setOwnerId(0L);
+        }
+
+        this.save(knowledgeBase);
+        return knowledgeBase;
+    }
+
+    @Override
     public boolean updateKnowledgeBase(KnowledgeBase knowledgeBase) {
         return baseMapper.updateById(knowledgeBase) > 0;
+    }
+
+    @Override
+    public boolean updateKnowledgeBaseFromDTO(KnowledgeBaseUpdateDTO updateDTO) {
+        KnowledgeBase existingKb = baseMapper.selectById(updateDTO.getId());
+        if (existingKb == null) {
+            return false;
+        }
+
+        // 只更新非空字段
+        if (StringUtils.hasText(updateDTO.getName())) {
+            existingKb.setName(updateDTO.getName());
+        }
+        if (StringUtils.hasText(updateDTO.getDescription())) {
+            existingKb.setDescription(updateDTO.getDescription());
+        }
+        if (StringUtils.hasText(updateDTO.getIntroduction())) {
+            existingKb.setIntroduction(updateDTO.getIntroduction());
+        }
+        if (StringUtils.hasText(updateDTO.getCoverUrl())) {
+            existingKb.setCoverUrl(updateDTO.getCoverUrl());
+        }
+        if (StringUtils.hasText(updateDTO.getRemark())) {
+            existingKb.setRemark(updateDTO.getRemark());
+        }
+        if (updateDTO.getVisibility() != null) {
+            existingKb.setVisibility(updateDTO.getVisibility());
+        }
+        if (updateDTO.getStatus() != null) {
+            existingKb.setStatus(updateDTO.getStatus());
+        }
+
+        return baseMapper.updateById(existingKb) > 0;
     }
 
     @Override

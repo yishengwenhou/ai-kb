@@ -2,15 +2,18 @@ package com.itpan.backend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 /**
  * 部门实体类
  */
 @Data
+@SuperBuilder
 @EqualsAndHashCode(callSuper = true) // 包含父类字段的 equals/hashCode
 @TableName("department")
+@AllArgsConstructor
+@NoArgsConstructor
 public class Department extends BaseEntity {
 
     /** 父部门ID */
@@ -20,10 +23,6 @@ public class Department extends BaseEntity {
     /** 部门名称 */
     @TableField("dept_name")
     private String deptName;
-
-    /** 显示顺序 */
-    @TableField("sort")
-    private Integer sort;
 
     /** 负责人 */
     @TableField("leader")

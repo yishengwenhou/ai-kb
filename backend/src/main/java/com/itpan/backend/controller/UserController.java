@@ -1,25 +1,26 @@
 package com.itpan.backend.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.itpan.backend.common.constants.UserConstant;
+import com.itpan.backend.model.dto.PasswordChangeDTO;
+import com.itpan.backend.model.dto.user.UserCreateDTO;
+import com.itpan.backend.model.dto.user.UserUpdateAdminDTO;
+import com.itpan.backend.model.dto.user.UserUpdateDTO;
 import com.itpan.backend.model.entity.User;
+import com.itpan.backend.model.vo.UserVO;
 import com.itpan.backend.service.UserService;
 import com.itpan.backend.util.UserContext;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+;
 
 @RestController
 @RequestMapping("/api/user")
+@Validated
 public class UserController {
 
     @Resource
@@ -36,69 +37,43 @@ public class UserController {
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(@RequestBody User updateData) {
-        User currentUser = UserContext.getCurrentUser();
-        User user = userService.getById(currentUser.getId());
-        if (user == null) {
-            return ResponseEntity.status(404).body("用户不存在");
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody UserUpdateDTO updateDTO) {
+        boolean success = userService.updateProfile(updateDTO);
+        if (!success) {
+            return ResponseEntity.status(400).body("用户信息修改失败");
         }
-
-        // 更新可修改的字段
-        if (StringUtils.hasText(updateData.getRealName())) {
-            user.setRealName(updateData.getRealName());
-        }
-        if (StringUtils.hasText(updateData.getEmail())) {
-            user.setEmail(updateData.getEmail());
-        }
-        if (StringUtils.hasText(updateData.getPhone())) {
-            user.setPhone(updateData.getPhone());
-        }
-
-        userService.updateById(user);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok("用户信息修改成功");
     }
 
     @PutMapping("/password")
-    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> passwordData) {
-        String oldPassword = passwordData.get("oldPassword");
-        String newPassword = passwordData.get("newPassword");
-
-        if (!StringUtils.hasText(oldPassword) || !StringUtils.hasText(newPassword)) {
-            return ResponseEntity.status(400).body("参数不能为空");
+    public ResponseEntity<?> updatePassword(@Valid @RequestBody PasswordChangeDTO passwordDTO) {
+        boolean success = userService.updatePassword(passwordDTO);
+        if (!success) {
+            return ResponseEntity.status(400).body("密码修改失败");
         }
-
-        User currentUser = UserContext.getCurrentUser();
-        User user = userService.getById(currentUser.getId());
-        if (user == null) {
-            return ResponseEntity.status(404).body("用户不存在");
-        }
-
-        // 验证原密码
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            return ResponseEntity.status(400).body("原密码不正确");
-        }
-
-        // 更新新密码
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userService.updateById(user);
-
         return ResponseEntity.ok("密码修改成功");
     }
 
     @GetMapping("/list")
-    public ResponseEntity<IPage<User>> listUser(
+    public ResponseEntity<IPage<UserVO>> listUser(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize
     ) {
-        IPage<User> pageList = userService.getPageList(keyword, pageNum, pageSize);
+        IPage<UserVO> pageList = userService.getPageList(keyword, pageNum, pageSize);
         return ResponseEntity.ok(pageList);
     }
 
+    @PostMapping("/create")
+    public ResponseEntity<?> createUser(@Valid @RequestBody UserCreateDTO userCreateDTO) {
+        User user = userService.createUser(userCreateDTO);
+        return ResponseEntity.ok(user);
+    }
+
    @PostMapping("/update")
-    public ResponseEntity<?> updateUser(@RequestParam("user") User user) {
-       User user1 = userService.updateUser(user);
-       return ResponseEntity.ok(user1);
+    public ResponseEntity<?> updateUser(@Valid @RequestBody UserUpdateAdminDTO updateDTO) {
+       User user = userService.updateUserByAdmin(updateDTO);
+       return ResponseEntity.ok(user);
     }
 
     @PostMapping("/reset-password")
@@ -107,14 +82,18 @@ public class UserController {
         if (user == null) {
             return ResponseEntity.status(400).body("用户不存在");
         }
-        user.setPassword(passwordEncoder.encode("1234567"));
+        user.setPassword(passwordEncoder.encode(UserConstant.BASE_PASSWORD));
         userService.updateById(user);
         return ResponseEntity.ok("密码已重置为：123456");
     }
 
     @PostMapping("/delete")
-    public ResponseEntity<?> deleteUser() {
-        return ResponseEntity.status(501).body("暂未开放该接口");
+    public ResponseEntity<?> deleteUser(@RequestBody Long id) {
+        Boolean success = userService.deleteUser(id);
+        if (!success){
+            return ResponseEntity.status(400).body("删除用户失败");
+        }
+        return ResponseEntity.ok("删除用户成功");
     }
 
 }

@@ -5,9 +5,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itpan.backend.mapper.DepartmentMapper;
+import com.itpan.backend.model.dto.DepartmentDTO;
 import com.itpan.backend.model.entity.Department;
 import com.itpan.backend.model.entity.User;
-import com.itpan.backend.model.vo.DepartmentVo;
+import com.itpan.backend.model.vo.DepartmentVO;
 import com.itpan.backend.service.DepartmentService;
 import com.itpan.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,36 +25,42 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     private final UserService userService;
 
     @Override
-    public List<DepartmentVo> getDepartmentTree(Long parentId) {
-        // 查询指定父部门下的所有子部门
-        List<Department> departments = this.list(new LambdaQueryWrapper<Department>()
-                .eq(parentId != null, Department::getParentId, parentId)
-                .isNull(parentId == null, Department::getParentId)  // 如果parentId为null，则查询根部门
-                .orderByAsc(Department::getSort));  // 按排序字段升序排列
+    public List<DepartmentVO> getDepartmentTree() {
+
+        List<Department> departments = baseMapper.selectList(null);
 
         // 将部门实体转换为VO并构建树形结构
-        return departments.stream().map(dept -> {
-            DepartmentVo vo = DepartmentVo.builder()
+        List<DepartmentVO> vos = departments.stream().map(dept -> {
+            DepartmentVO vo = DepartmentVO.builder()
                     .id(dept.getId())
                     .parentId(dept.getParentId())
                     .deptName(dept.getDeptName())
-                    .sort(dept.getSort())
+                    .children(new ArrayList<>())
                     .build();
-
-            // 递归获取子部门
-            List<Department> children = getChildrenDepartments(dept.getId());
-            if (!children.isEmpty()) {
-                vo.setChildren(children);
-            }
-
             return vo;
         }).collect(Collectors.toList());
-    }
 
-    private List<Department> getChildrenDepartments(Long parentId) {
-        return this.list(new LambdaQueryWrapper<Department>()
-                .eq(Department::getParentId, parentId)
-                .orderByAsc(Department::getSort));
+        Map<Long, DepartmentVO> voMap = vos.stream().collect(
+                Collectors.toMap(DepartmentVO::getId, vo -> vo)
+        );
+        DepartmentVO dummy = DepartmentVO.builder()
+                .children(new ArrayList<>())
+                .build();
+        for (DepartmentVO vo : vos){
+            Long parentId = vo.getParentId();
+            if(parentId==null){
+                dummy.getChildren().add(vo);
+            }else{
+                DepartmentVO parent = voMap.get(parentId);
+                if (parent != null) {
+                    parent.getChildren().add(vo);
+                } else {
+                    dummy.getChildren().add(vo);
+                }
+            }
+        }
+
+        return dummy.getChildren();
     }
 
     @Override
@@ -63,11 +69,13 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     }
 
     @Override
-    public boolean createDepartment(Department department) {
-        // 设置默认值
-        if (department.getStatus() == null) {
-            department.setStatus(0); // 默认正常状态
-        }
+    public boolean createDepartment(DepartmentDTO departmentDTO) {
+        Department department = Department.builder()
+                .parentId(departmentDTO.getParentId())
+                .deptName(departmentDTO.getDeptName())
+                .leader(departmentDTO.getLeaderId())
+                .status(departmentDTO.getStatus())
+                .build();
         return baseMapper.insert(department) > 0;
     }
 
@@ -79,7 +87,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     }
 
     @Override
-    public IPage<DepartmentVo> getPageList(String keyword, Long pageNum, Long pageSize) {
+    public IPage<DepartmentVO> getPageList(String keyword, Long pageNum, Long pageSize) {
 
         Page<Department> page = new Page<>(pageNum, pageSize);
         IPage<Department> departmentPage = baseMapper.selectPage(page, new LambdaQueryWrapper<Department>()
@@ -99,16 +107,15 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
             userMap = new HashMap<>();
         }
 
-        IPage<DepartmentVo> departmentVoPage = departmentPage.convert(dept -> {
+        IPage<DepartmentVO> departmentVoPage = departmentPage.convert(dept -> {
             User leader = null;
             if (dept.getLeader() != null && userMap.containsKey(dept.getLeader())) {
                 leader = userMap.get(dept.getLeader());
             }
-            return DepartmentVo.builder()
+            return DepartmentVO.builder()
                     .id(dept.getId())
                     .deptName(dept.getDeptName())
                     .parentId(dept.getParentId())
-                    .sort(dept.getSort())
                     .status(dept.getStatus())
                     .leader(leader)
                     .build();
@@ -118,12 +125,19 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     }
 
     @Override
-    public Department updateDept(Department department) {
+    public Department updateDept(DepartmentDTO departmentDTO) {
+        Department department = Department.builder()
+                .id(departmentDTO.getId())
+                .parentId(departmentDTO.getParentId())
+                .deptName(departmentDTO.getDeptName())
+                .leader(departmentDTO.getLeaderId())
+                .status(departmentDTO.getStatus())
+                .build();
         return baseMapper.updateById(department) > 0 ? department : null;
     }
 
     @Override
     public boolean deleteDept(Long id) {
-        return false;
+        return baseMapper.deleteById(id)>0;
     }
 }

@@ -1,9 +1,9 @@
 package com.itpan.backend.service.impl;
 
 import com.itpan.backend.model.entity.User;
-import com.itpan.backend.model.dto.LoginRequest;
-import com.itpan.backend.model.dto.RegisterRequest;
-import com.itpan.backend.model.vo.TokenVo;
+import com.itpan.backend.model.dto.auth.LoginRequest;
+import com.itpan.backend.model.dto.auth.RegisterRequest;
+import com.itpan.backend.model.vo.TokenVO;
 import com.itpan.backend.service.AuthService;
 import com.itpan.backend.service.UserService;
 import com.itpan.backend.util.JwtUtil;
@@ -101,7 +101,7 @@ public class AuthServiceImpl implements AuthService {
         String newAccessToken = jwtUtil.generateAccessToken(userDetails);
         String newRefreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-        return ResponseEntity.ok(new TokenVo(newAccessToken, newRefreshToken));
+        return ResponseEntity.ok(new TokenVO(newAccessToken, newRefreshToken));
     }
 
 }

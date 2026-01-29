@@ -1,8 +1,9 @@
 package com.itpan.backend.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.itpan.backend.model.dto.DepartmentDTO;
 import com.itpan.backend.model.entity.Department;
-import com.itpan.backend.model.vo.DepartmentVo;
+import com.itpan.backend.model.vo.DepartmentVO;
 import com.itpan.backend.service.DepartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,16 +26,16 @@ public class DepartmentController {
      * 获取部门列表（支持树形结构）
      */
     @GetMapping
-    public ResponseEntity<List<DepartmentVo>> listDepartments(@RequestParam(required = false) Long parentId) {
-        List<DepartmentVo> departments = departmentService.getDepartmentTree(parentId);
+    public ResponseEntity<List<DepartmentVO>> getDepartmentTree() {
+        List<DepartmentVO> departments = departmentService.getDepartmentTree();
         return ResponseEntity.ok(departments);
     }
 
     @GetMapping("/list")
-    public ResponseEntity<IPage<DepartmentVo>> list(@RequestParam(required = false) String  keyword,
-                                                  @RequestParam Long pageNum,
-                                                  @RequestParam Long pageSize) {
-        IPage<DepartmentVo> departments = departmentService.getPageList(keyword, pageNum, pageSize);
+    public ResponseEntity<IPage<DepartmentVO>> list(@RequestParam(required = false) String  keyword,
+                                                    @RequestParam Long pageNum,
+                                                    @RequestParam Long pageSize) {
+        IPage<DepartmentVO> departments = departmentService.getPageList(keyword, pageNum, pageSize);
         return ResponseEntity.ok(departments);
     }
 
@@ -51,8 +52,8 @@ public class DepartmentController {
      * 创建部门
      */
     @PostMapping
-    public ResponseEntity<?> createDepartment(@Valid @RequestBody Department department) {
-        boolean result = departmentService.createDepartment(department);
+    public ResponseEntity<?> createDepartment(@Valid @RequestBody DepartmentDTO departmentDTO) {
+        boolean result = departmentService.createDepartment(departmentDTO);
         return ResponseEntity.ok(result);
     }
 
@@ -60,9 +61,8 @@ public class DepartmentController {
      * 更新部门
      */
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateDepartment(@PathVariable Long id, @Valid @RequestBody Department department) {
-
-        Department department1 = departmentService.updateDept(department);
+    public ResponseEntity<?> updateDepartment(@Valid @RequestBody DepartmentDTO departmentDTO) {
+        Department department1 = departmentService.updateDept(departmentDTO);
         return ResponseEntity.ok(department1);
     }
 

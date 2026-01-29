@@ -2,6 +2,7 @@ package com.itpan.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.itpan.backend.common.constants.OssConstant;
 import com.itpan.backend.mapper.DocumentMapper;
 import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.service.DocumentService;
@@ -69,7 +70,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
             }
 
             // 3. 上传 OSS
-            String url = ossUtil.upload(file.getInputStream(), file.getOriginalFilename());
+            String url = ossUtil.upload(OssConstant.BUCKET_DOCS, file.getInputStream(), file.getOriginalFilename());
 
             // 4. 构建并保存 Document 对象
             Document doc = Document.builder()

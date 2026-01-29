@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
@@ -26,6 +27,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
+    // backend/security/JwtAuthenticationFilter.java
+
+    private final HandlerExceptionResolver handlerExceptionResolver;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -35,24 +40,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = parseJwt(request);
             if (jwt != null && jwtUtil.validateToken(jwt, getUserNameFromToken(jwt))) {
                 String username = jwtUtil.getUsernameFromToken(jwt);
-                
-                // 加载用户详细信息
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                
-                // 验证令牌是否属于该用户
-                if (jwtUtil.validateToken(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authentication = 
+
+                UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+
+            filterChain.doFilter(request, response);
+
         } catch (Exception e) {
-            log.error("无法设置用户认证: {}", e);
+            log.error("Filter层捕获异常，移交全局处理: {}", e.getMessage());
+            handlerExceptionResolver.resolveException(request, response, null, e);
         }
-        
-        filterChain.doFilter(request, response);
     }
 
     private String parseJwt(HttpServletRequest request) {

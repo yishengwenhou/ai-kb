@@ -2,6 +2,8 @@ package com.itpan.backend.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.itpan.backend.model.dto.KnowledgeBaseCreateDTO;
+import com.itpan.backend.model.dto.KnowledgeBaseUpdateDTO;
 import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.model.entity.KnowledgeBase;
 import java.util.List;
@@ -21,11 +23,26 @@ public interface KnowledgeBaseService extends IService<KnowledgeBase>{
     boolean createKnowledgeBase(KnowledgeBase kb, String scope);
 
     /**
+     * 从DTO创建知识库
+     * @param createDTO 创建DTO
+     * @param scope 空间范围
+     * @return 创建的知识库实体
+     */
+    KnowledgeBase createKnowledgeBaseFromDTO(KnowledgeBaseCreateDTO createDTO, String scope);
+
+    /**
      * 更新知识库
      * @param knowledgeBase 知识库实体
      * @return 是否更新成功
      */
     boolean updateKnowledgeBase(KnowledgeBase knowledgeBase);
+
+    /**
+     * 从DTO更新知识库
+     * @param updateDTO 更新DTO
+     * @return 是否更新成功
+     */
+    boolean updateKnowledgeBaseFromDTO(KnowledgeBaseUpdateDTO updateDTO);
 
     /**
      * 删除知识库

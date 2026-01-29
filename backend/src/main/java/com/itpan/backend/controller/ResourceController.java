@@ -1,5 +1,7 @@
 package com.itpan.backend.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.itpan.backend.common.constants.OssConstant;
 import com.itpan.backend.model.entity.User;
 import com.itpan.backend.service.UserService;
 import com.itpan.backend.util.DocumentParser;
@@ -7,6 +9,7 @@ import com.itpan.backend.util.OssUtil;
 import com.itpan.backend.util.UserContext;
 import jakarta.annotation.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -51,48 +54,69 @@ public class ResourceController {
     @PostMapping("/avatar")
     public ResponseEntity<Map<String, Object>> uploadAvatar(@RequestParam("file") MultipartFile file) {
         try {
-            // 验证文件类型
+            // 1. 基础校验 (保持不变)
             String contentType = file.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
-                Map<String, Object> error = new HashMap<>();
-                error.put("success", false);
-                error.put("message", "只能上传图片文件");
-                return ResponseEntity.badRequest().body(error);
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "只能上传图片文件"));
             }
-
-            // 验证文件大小（2MB）
             if (file.getSize() > 2 * 1024 * 1024) {
-                Map<String, Object> error = new HashMap<>();
-                error.put("success", false);
-                error.put("message", "图片大小不能超过 2MB");
-                return ResponseEntity.badRequest().body(error);
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "图片大小不能超过 2MB"));
             }
 
-            // 生成文件名
-            String originalFilename = file.getOriginalFilename();
-            String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
-            String fileName = "avatar/" + UserContext.getCurrentUser().getId() + "/" + UUID.randomUUID() + extension;
+            // 2. 【核心】计算文件哈希 (MD5)
+            String fileHash = DigestUtils.md5DigestAsHex(file.getInputStream());
 
-            // 上传到 OSS
-            String url = ossUtil.upload(fileName, file.getInputStream());
+            // 3. 【核心】去重查询：查 User 表看有没有人用过这张图
+            User existUser = userService.getOne(new LambdaQueryWrapper<User>()
+                    .eq(User::getAvatarHash, fileHash)
+                    .isNotNull(User::getAvatarUrl)
+                    .last("LIMIT 1")); // 只需找到一个就行
 
-            // 更新用户头像
-            User currentUser = UserContext.getCurrentUser();
-            User user = userService.getById(currentUser.getId());
-            if (user != null) {
-                user.setAvatarUrl(url);
-                userService.updateById(user);
+            String url;
+            if (existUser != null) {
+                url = existUser.getAvatarUrl();
+            } else {
+                String originalFilename = file.getOriginalFilename();
+                String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
+                String fileName = "avatar/" + UserContext.getUserId() + "/" + UUID.randomUUID() + extension;
+
+                url = ossUtil.upload(OssConstant.BUCKET_AVATAR, file.getInputStream(), fileName);
             }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("data", url);
+            response.put("hash", fileHash);
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
+            e.printStackTrace();
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("message", "上传失败: " + e.getMessage());
             return ResponseEntity.badRequest().body(error);
         }
     }
+
+//    // 修改 ResourceController.java
+//    @PostMapping("/avatar")
+//    public ResponseEntity<Map<String, Object>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+//        try {
+//            // ... 校验文件大小和类型的代码保持不变 ...
+//
+//            // 1. 上传到 OSS
+//            String fileName = "avatar/" + UserContext.getUserId() + "/" + UUID.randomUUID() + extension;
+//            String url = ossUtil.upload(file.getInputStream(), fileName);
+//
+//            // 2. 【关键修改】这里不要去调用 userService.updateById(user) 了！
+//            // 仅仅返回 URL 给前端即可，让前端决定什么时候保存
+//
+//            Map<String, Object> response = new HashMap<>();
+//            response.put("success", true);
+//            response.put("data", url); // 只返回 URL
+//            return ResponseEntity.ok(response);
+//        } catch (Exception e) {
+//            // ... 异常处理 ...
+//        }
+//    }
 }

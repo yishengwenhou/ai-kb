@@ -1,12 +1,18 @@
 package com.itpan.backend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@Data
+@SuperBuilder
+@Getter
+@Setter
+@NoArgsConstructor
 public abstract class BaseEntity implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;

@@ -1,6 +1,6 @@
-package com.itpan.backend.model.dto;
+package com.itpan.backend.model.dto.auth;
 
-import com.itpan.backend.model.vo.TokenVo;
+import com.itpan.backend.model.vo.TokenVO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RefreshTokenRequest {
-    private TokenVo tokenVo;
+    private TokenVO tokenVo;
 }
