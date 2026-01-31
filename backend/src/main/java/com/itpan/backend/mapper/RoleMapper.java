@@ -2,7 +2,8 @@ package com.itpan.backend.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.itpan.backend.model.entity.Role;
+import org.apache.ibatis.annotations.Mapper;
 
-//@Mapper
+@Mapper
 public interface RoleMapper extends BaseMapper<Role> {
 }

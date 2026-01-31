@@ -16,8 +16,6 @@ public class UserCreateDTO{
 
     private Integer gender;
 
-    private String password;
-
     private String realName;
 
     private Long deptId;

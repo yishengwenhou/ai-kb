@@ -53,14 +53,15 @@ public class AuthServiceImpl implements AuthService {
             response.put("accessToken", accessToken);
             response.put("refreshToken", refreshToken);
             response.put("tokenType", "Bearer");
-            response.put("expiresIn", 3600); // 访问令牌过期时间
+            response.put("expiresIn", 3600);
             response.put("username", authentication.getName());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
-            response.put("error", "用户名或密码错误");
-            return ResponseEntity.status(401).body(response);
+            response.put("success", false);
+            response.put("message", "用户名或密码错误");
+            return ResponseEntity.badRequest().body(response);
         }
 
     }

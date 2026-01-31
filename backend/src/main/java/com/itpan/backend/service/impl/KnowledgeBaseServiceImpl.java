@@ -7,18 +7,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itpan.backend.common.enums.KBOwnerType;
 import com.itpan.backend.mapper.DocumentMapper;
 import com.itpan.backend.mapper.KnowledgeBaseMapper;
-import com.itpan.backend.model.dto.KnowledgeBaseCreateDTO;
-import com.itpan.backend.model.dto.KnowledgeBaseUpdateDTO;
+import com.itpan.backend.model.dto.knowledgeBase.KnowledgeBaseCreateDTO;
+import com.itpan.backend.model.dto.knowledgeBase.KnowledgeBaseUpdateDTO;
 import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.model.entity.KnowledgeBase;
 import com.itpan.backend.service.KnowledgeBaseService;
 import com.itpan.backend.util.UserContext;
 import jakarta.annotation.Resource;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, KnowledgeBase> implements KnowledgeBaseService {

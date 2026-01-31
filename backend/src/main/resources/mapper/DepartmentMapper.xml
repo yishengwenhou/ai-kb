@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.itpan.backend.mapper.DepartmentMapper">
+    <resultMap id="DeptVoMap" type="com.itpan.backend.model.vo.DepartmentVO">
+        <id property="id" column="id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+
+        <association property="leader" javaType="com.itpan.backend.model.entity.User">
+            <id property="id" column="leader_id"/>
+            <result property="realName" column="leader_real_name"/>
+            <result property="username" column="leader_username"/>
+            <result property="email" column="leader_email"/>
+            <result property="phone" column="leader_phone"/>
+            <result property="avatarUrl" column="leader_avatar"/>
+        </association>
+    </resultMap>
+    <select id="selectDeptVoPage" resultMap="DeptVoMap">
+        SELECT
+        d.id,
+        d.parent_id,
+        d.dept_name,
+        d.status,
+        d.create_time,
+        -- 负责人的字段 (起别名与 resultMap 对应)
+        u.id          AS leader_id,
+        u.real_name   AS leader_real_name,
+        u.username    AS leader_username,
+        u.email       AS leader_email,
+        u.phone       AS leader_phone,
+        u.avatar_url  AS leader_avatar
+        FROM department d
+        -- 关联用户表：根据部门的 leader 字段关联用户的 id
+        LEFT JOIN user u ON d.leader = u.id
+        <where>
+            d.deleted = 0
+            <if test="query.keyword != null and query.keyword != ''">
+                AND d.dept_name LIKE CONCAT('%', #{query.keyword}, '%')
+            </if>
+        </where>
+        ORDER BY d.create_time DESC
+    </select>
+</mapper>

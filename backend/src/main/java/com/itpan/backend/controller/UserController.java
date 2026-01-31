@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.itpan.backend.common.constants.UserConstant;
 import com.itpan.backend.model.dto.PasswordChangeDTO;
 import com.itpan.backend.model.dto.user.UserCreateDTO;
+import com.itpan.backend.model.dto.user.UserQueryDTO;
 import com.itpan.backend.model.dto.user.UserUpdateAdminDTO;
 import com.itpan.backend.model.dto.user.UserUpdateDTO;
 import com.itpan.backend.model.entity.User;
@@ -55,12 +56,8 @@ public class UserController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<IPage<UserVO>> listUser(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "10") Integer pageSize
-    ) {
-        IPage<UserVO> pageList = userService.getPageList(keyword, pageNum, pageSize);
+    public ResponseEntity<IPage<UserVO>> listUser(UserQueryDTO userQueryDTO) {
+        IPage<UserVO> pageList = userService.getPageList(userQueryDTO);
         return ResponseEntity.ok(pageList);
     }
 

@@ -20,7 +20,6 @@ public class DocumentController {
 
     private final DocumentService documentService;
     private final DocumentAsyncServiceImpl documentAsyncService;
-    private final OssUtil ossUtil;
 
     /**
      * 上传文档到指定知识库

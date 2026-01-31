@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.itpan.backend.model.dto.PasswordChangeDTO;
 import com.itpan.backend.model.dto.user.UserCreateDTO;
+import com.itpan.backend.model.dto.user.UserQueryDTO;
 import com.itpan.backend.model.dto.user.UserUpdateAdminDTO;
 import com.itpan.backend.model.dto.user.UserUpdateDTO;
 import com.itpan.backend.model.entity.User;
@@ -21,7 +22,7 @@ public interface UserService extends IService<User> {
 
     Boolean deleteUser(Long id);
 
-    IPage<UserVO> getPageList(String keyword, Integer pageNum, Integer pageSize);
+    IPage<UserVO> getPageList(UserQueryDTO userQueryDTO);
 
     User createUser(UserCreateDTO userCreateDTO);
 

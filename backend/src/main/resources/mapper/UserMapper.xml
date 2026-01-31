@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.itpan.backend.mapper.UserMapper">
+    <select id="selectUserVoPage" resultType="com.itpan.backend.model.vo.UserVO">
+        SELECT
+        u.id,
+        u.username,
+        u.real_name,
+        u.phone,
+        u.email,
+        u.gender,
+        u.status,
+        u.create_time,
+        u.dept_id,
+        u.avatar_url,
+        d.dept_name
+        FROM user u
+        LEFT JOIN department d ON u.dept_id = d.id
+        <if test="query.role != null">
+            INNER JOIN user_role ur ON u.id = ur.user_id
+        </if>
+        <where>
+            u.deleted = 0
+            <if test="query.deptId != null">
+                AND u.dept_id = #{query.deptId}
+            </if>
+            <if test="query.status != null">
+                AND u.status = #{query.status}
+            </if>
+            <if test="query.role != null">
+                AND ur.role_id = #{query.role}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (
+                u.real_name LIKE CONCAT('%', #{query.keyword}, '%')
+                OR u.username LIKE CONCAT(#{query.keyword}, '%')
+                OR u.phone LIKE CONCAT(#{query.keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY u.create_time DESC
+    </select>
+</mapper>

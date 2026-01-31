@@ -1,8 +1,8 @@
 package com.itpan.backend.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.itpan.backend.model.dto.KnowledgeBaseCreateDTO;
-import com.itpan.backend.model.dto.KnowledgeBaseUpdateDTO;
+import com.itpan.backend.model.dto.knowledgeBase.KnowledgeBaseCreateDTO;
+import com.itpan.backend.model.dto.knowledgeBase.KnowledgeBaseUpdateDTO;
 import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.model.entity.KnowledgeBase;
 import com.itpan.backend.service.KnowledgeBaseService;
@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController

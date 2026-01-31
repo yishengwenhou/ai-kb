@@ -10,11 +10,14 @@ import lombok.EqualsAndHashCode;
 @TableName("role")
 public class Role extends BaseEntity {
     @TableField(value = "role_name")
-    private String roleName; // 角色名称 (如：管理员)
+    private String roleName;
     
     @TableField(value = "role_key")
-    private String roleKey;  // 角色权限标识 (如：ROLE_ADMIN)
+    private String roleKey;
     
     @TableField(value = "sort")
-    private Integer sort;    // 显示顺序
+    private Integer sort;
+
+    @TableField(value = "status")
+    private Integer status;
 }

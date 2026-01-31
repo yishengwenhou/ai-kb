@@ -1,4 +1,4 @@
-package com.itpan.backend.model.dto;
+package com.itpan.backend.model.dto.department;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

@@ -1,7 +1,9 @@
 package com.itpan.backend.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.itpan.backend.model.dto.DepartmentDTO;
+import com.itpan.backend.model.dto.department.DepartmentDTO;
+import com.itpan.backend.model.dto.department.DeptCreateDTO;
+import com.itpan.backend.model.dto.department.DeptQueryDTO;
 import com.itpan.backend.model.entity.Department;
 import com.itpan.backend.model.vo.DepartmentVO;
 import com.itpan.backend.service.DepartmentService;
@@ -32,10 +34,8 @@ public class DepartmentController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<IPage<DepartmentVO>> list(@RequestParam(required = false) String  keyword,
-                                                    @RequestParam Long pageNum,
-                                                    @RequestParam Long pageSize) {
-        IPage<DepartmentVO> departments = departmentService.getPageList(keyword, pageNum, pageSize);
+    public ResponseEntity<IPage<DepartmentVO>> list(DeptQueryDTO deptQueryDTO) {
+        IPage<DepartmentVO> departments = departmentService.getPageList(deptQueryDTO);
         return ResponseEntity.ok(departments);
     }
 
@@ -52,8 +52,8 @@ public class DepartmentController {
      * 创建部门
      */
     @PostMapping
-    public ResponseEntity<?> createDepartment(@Valid @RequestBody DepartmentDTO departmentDTO) {
-        boolean result = departmentService.createDepartment(departmentDTO);
+    public ResponseEntity<?> createDepartment(@Valid @RequestBody DeptCreateDTO deptCreateDTO) {
+        boolean result = departmentService.createDepartment(deptCreateDTO);
         return ResponseEntity.ok(result);
     }
 

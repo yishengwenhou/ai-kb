@@ -2,7 +2,9 @@ package com.itpan.backend.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.itpan.backend.model.dto.DepartmentDTO;
+import com.itpan.backend.model.dto.department.DepartmentDTO;
+import com.itpan.backend.model.dto.department.DeptCreateDTO;
+import com.itpan.backend.model.dto.department.DeptQueryDTO;
 import com.itpan.backend.model.entity.Department;
 import com.itpan.backend.model.vo.DepartmentVO;
 
@@ -28,7 +30,7 @@ public interface DepartmentService extends IService<Department> {
      * @param department 部门实体
      * @return 是否创建成功
      */
-    boolean createDepartment(DepartmentDTO departmentDTO);
+    boolean createDepartment(DeptCreateDTO deptCreateDTO);
 
     /**
      * 检查部门是否存在子部门
@@ -37,7 +39,7 @@ public interface DepartmentService extends IService<Department> {
      */
     Long checkChildrenExist(Long id);
 
-    IPage<DepartmentVO> getPageList(String keyword, Long pageNum, Long pageSize);
+    IPage<DepartmentVO> getPageList(DeptQueryDTO deptQueryDTO);
 
     boolean deleteDept(Long id);
 

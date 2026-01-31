@@ -2,11 +2,10 @@ package com.itpan.backend.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.itpan.backend.model.dto.KnowledgeBaseCreateDTO;
-import com.itpan.backend.model.dto.KnowledgeBaseUpdateDTO;
+import com.itpan.backend.model.dto.knowledgeBase.KnowledgeBaseCreateDTO;
+import com.itpan.backend.model.dto.knowledgeBase.KnowledgeBaseUpdateDTO;
 import com.itpan.backend.model.entity.Document;
 import com.itpan.backend.model.entity.KnowledgeBase;
-import java.util.List;
 
 public interface KnowledgeBaseService extends IService<KnowledgeBase>{
 
