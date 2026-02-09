@@ -1,7 +1,12 @@
 package com.itpan.backend.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.itpan.backend.model.dto.document.DocContentUpdateDTO;
+import com.itpan.backend.model.dto.document.DocCreateDTO;
+import com.itpan.backend.model.dto.document.MoveNodeDTO;
 import com.itpan.backend.model.entity.Document;
+import com.itpan.backend.model.vo.DocumentVO;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,20 +15,24 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface DocumentService extends IService<Document> {
-    Document uploadAndSave(MultipartFile file, Long kbId, Long parentId);
 
-    // 根据知识库ID获取文档列表
-    List<Document> getListByKbId(Long kbId);
+    List<DocumentVO> getChildren(Long kbId, Long parentId);
 
-    boolean deleteDocument(Long id);
+    Document createNode(DocCreateDTO docCreateDTO);
 
-    record PreviewResult(String fileName, byte[] bytes, MediaType mediaType) {
-    }
+    void moveNode(MoveNodeDTO moveNodeDTO);
 
-    PreviewResult preview(Long id);
+    Document uploadFile(MultipartFile file, Long kbId, Long parentId);
 
-    record downloadResult(String fileName, byte[] bytes) {
-    }
-    downloadResult download(Long id);
+    DocumentVO getNodeDetail(Long id);
+
+    boolean updateContent(DocContentUpdateDTO docContentUpdateDTO);
+
+    List<DocumentVO> getBreadcrumb(Long id);
+
+    void downloadFile(Long id, HttpServletResponse response);
+
+    void removeNode(Long id);
+
 
 }

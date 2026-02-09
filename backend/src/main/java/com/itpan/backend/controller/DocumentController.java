@@ -1,9 +1,15 @@
 package com.itpan.backend.controller;
 
+import com.itpan.backend.model.dto.document.DocContentUpdateDTO;
+import com.itpan.backend.model.dto.document.DocCreateDTO;
+import com.itpan.backend.model.dto.document.MoveNodeDTO;
 import com.itpan.backend.model.entity.Document;
+import com.itpan.backend.model.vo.DocumentVO;
 import com.itpan.backend.service.DocumentService;
 import com.itpan.backend.service.impl.DocumentAsyncServiceImpl;
 import com.itpan.backend.util.OssUtil;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 
 @RestController
@@ -20,6 +27,31 @@ public class DocumentController {
 
     private final DocumentService documentService;
     private final DocumentAsyncServiceImpl documentAsyncService;
+
+    // 1. 获取列表 (飞书模式：懒加载，点哪层查哪层)
+    // 前端点开一个文件夹，调用一次这个接口，传 parentId
+    @GetMapping("/list")
+    public ResponseEntity<?> list(@RequestParam Long kbId, @RequestParam(defaultValue = "0") Long parentId) {
+        List<DocumentVO> list = documentService.getChildren(kbId, parentId);
+        return ResponseEntity.ok(list);
+    }
+
+    // 2. 新建文档/文件夹 (统一接口)
+    // 前端传 type="doc" 就是建文档，传 type="folder" 就是建文件夹
+    @PostMapping("/create")
+    public ResponseEntity<?> create(@RequestBody DocCreateDTO docCreateDTO) {
+        Document document = documentService.createNode(docCreateDTO);
+        return ResponseEntity.ok(document);
+    }
+
+    // 3. 移动/排序 (飞书体验核心)
+    // 当用户拖拽文档改变顺序或层级时调用
+    @PostMapping("/move")
+    public ResponseEntity<?> move(@RequestBody MoveNodeDTO moveNodeDTO) {
+        // 逻辑：更新 parentId, treePath 和 sort
+        documentService.moveNode(moveNodeDTO);
+        return ResponseEntity.ok("移动成功");
+    }
 
     /**
      * 上传文档到指定知识库
@@ -33,7 +65,7 @@ public class DocumentController {
             return ResponseEntity.badRequest().body("文件为空");
         }
         try {
-            Document document = documentService.uploadAndSave(file, kbId, parentId);
+            Document document = documentService.uploadFile(file, kbId, parentId);
             documentAsyncService.parseDocument(document.getId());
             return ResponseEntity.ok(document);
         } catch (Exception e) {
@@ -41,81 +73,58 @@ public class DocumentController {
         }
     }
 
+    // DocumentController.java
 
     /**
-     * 下载文档
-     * 优化：参数改为 id，通过 ID 查 URL，防止恶意用户随便传 URL 下载非本文档的文件
+     * 1. 获取文档详情 (用于编辑回显)
+     */
+    @GetMapping("/detail/{id}")
+    public ResponseEntity<DocumentVO> getDetail(@PathVariable Long id) {
+        DocumentVO vo = documentService.getNodeDetail(id);
+        return ResponseEntity.ok(vo);
+    }
+
+    /**
+     * 2. 更新文档内容 (对接编辑器自动保存)
+     */
+    @PutMapping("/content")
+    public ResponseEntity<?> updateContent(@RequestBody @Valid DocContentUpdateDTO docContentUpdateDTO) {
+        documentService.updateContent(docContentUpdateDTO);
+        return ResponseEntity.ok("保存成功");
+    }
+
+    /**
+     * 3. 重命名或更换图标
+     */
+//    @PutMapping("/meta")
+//    public ResponseEntity<?> updateMeta(@RequestBody @Valid DocMetaUpdateDTO dto) {
+//        documentService.updateMeta(dto);
+//        return ResponseEntity.ok("更新成功");
+//    }
+
+    /**
+     * 4. 获取面包屑导航 (利用 tree_path 高效查询)
+     */
+    @GetMapping("/breadcrumb/{id}")
+    public ResponseEntity<List<DocumentVO>> getBreadcrumb(@PathVariable Long id) {
+        List<DocumentVO> list = documentService.getBreadcrumb(id);
+        return ResponseEntity.ok(list);
+    }
+
+    /**
+     * 5. 文件下载
      */
     @GetMapping("/download/{id}")
-    public ResponseEntity<byte[]> download(@PathVariable Long id) throws UnsupportedEncodingException {
-
-        DocumentService.downloadResult doc = documentService.download(id);
-
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=\"" +
-                        java.net.URLEncoder.encode(doc.fileName(), "UTF-8") + "\"")
-                .body(doc.bytes());
+    public void download(@PathVariable Long id, HttpServletResponse response) {
+        documentService.downloadFile(id, response);
     }
 
     /**
-     * 预览解析后的文本内容 (调试或前端展示用)
-     */
-    @GetMapping("/{id}/content")
-    public ResponseEntity<?> getContent(@PathVariable Long id) {
-        Document doc = documentService.getById(id);
-        if (doc == null) return ResponseEntity.notFound().build();
-
-        // 如果内容为空，可能是还没解析完
-        if (doc.getContent() == null) {
-            return ResponseEntity.ok("文档正在解析中或解析失败...");
-        }
-        return ResponseEntity.ok(doc.getContent());
-    }
-
-    @GetMapping("/preview/{id}")
-    public ResponseEntity<byte[]> preview(@PathVariable Long id) throws UnsupportedEncodingException {
-
-        DocumentService.PreviewResult result = documentService.preview(id);
-
-        return ResponseEntity.ok()
-                .contentType(result.mediaType())
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" +
-                        java.net.URLEncoder.encode(result.fileName(), "UTF-8") + "\"")
-                .body(result.bytes());
-    }
-
-
-    /**
-     * 重试解析
-     * 迁移自 ResourceController.retryParse
-     */
-    @PostMapping("/{id}/retry")
-    public ResponseEntity<?> retryParse(@PathVariable Long id) {
-        Document doc = documentService.getById(id);
-        if (doc == null) return ResponseEntity.notFound().build();
-
-        // 重置状态
-        doc.setStatus(1); // 处理中
-        documentService.updateById(doc);
-
-        // 触发异步解析
-        documentAsyncService.parseDocument(id);
-
-        return ResponseEntity.ok("已提交重试任务");
-    }
-
-    /**
-     * 删除文档 (级联删除)
-     * 建议：在 Service 层实现 deleteDocument 方法，包含删除数据库记录和OSS文件
+     * 6. 逻辑删除 (移入回收站)
      */
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        // 调用 Service 层的完整逻辑
-        boolean success = documentService.deleteDocument(id);
-        if (success) {
-            return ResponseEntity.ok("删除成功");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<?> deleteNode(@PathVariable Long id) {
+        documentService.removeNode(id);
+        return ResponseEntity.ok("已移入回收站");
     }
 }

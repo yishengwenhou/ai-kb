@@ -55,5 +55,5 @@ public interface KnowledgeBaseService extends IService<KnowledgeBase>{
      * @param kbId 知识库ID
      * @return 文档列表
      */
-    IPage<Document> getDocuments(Long kbId, String keyword, int pageNum, int pageSize);
+//    IPage<Document> getDocuments(Long kbId, String keyword, int pageNum, int pageSize);
 }

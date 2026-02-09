@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itpan.backend.mapper.DocumentMapper">
+
+    <resultMap id="DocumentVOMap" type="com.itpan.backend.model.vo.DocumentVO">
+        <id column="id" property="id"/>
+        <result column="kb_id" property="kbId"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="title" property="title"/>
+        <result column="type" property="type"/>
+        <result column="icon" property="icon"/>
+        <result column="sort" property="sort"/>
+        <result column="has_children" property="hasChildren"/>
+        <result column="create_user_name" property="createName"/>
+    </resultMap>
+
+    <select id="selectNodeList" resultMap="DocumentVOMap">
+        SELECT
+            d.id, d.kb_id, d.parent_id, d.title, d.type, d.icon, d.sort,
+            d.file_ext, d.file_size, d.update_time, d.status,
+            -- 1. 关联查人名
+            u.real_name AS create_user_name,
+            -- 2. 子查询查是否有子节点
+            (SELECT COUNT(1) > 0 FROM document sub WHERE sub.parent_id = d.id AND sub.deleted = 0) AS has_children
+        FROM document d
+                 LEFT JOIN user u ON d.create_by = u.id
+        WHERE d.deleted = 0
+          AND d.kb_id = #{kbId}
+          AND d.parent_id = #{parentId}
+        ORDER BY d.sort ASC, d.create_time DESC
+    </select>
+
+    <select id="selectDeletedPage" resultType="com.itpan.backend.model.entity.Document">
+        SELECT * FROM document
+        WHERE deleted = 1
+        <if test="keyword != null and keyword != ''">
+            AND file_name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY update_time DESC
+    </select>
+
+    <delete id="permanentDelete">
+        DELETE FROM document WHERE id = #{id}
+    </delete>
+
+    <update id="updateTreePathByParent">
+        UPDATE document
+        SET tree_path = REPLACE(tree_path, #{oldPathPrefix}, #{newPathPrefix})
+        WHERE kb_id = #{kbId}
+          AND tree_path LIKE CONCAT(#{oldPathPrefix}, '%')
+          AND deleted = 0
+    </update>
+
+<!--    <select id="selectNodeList" resultType="com.itpan.backend.model.entity.Document">-->
+<!--        SELECT id, kb_id, parent_id, title, type, icon, sort, file_ext, file_size, update_time, status-->
+<!--        FROM document-->
+<!--        WHERE deleted = 0 AND kb_id = #{kbId} AND parent_id = #{parentId}-->
+<!--        ORDER BY sort ASC, create_time DESC-->
+<!--    </select>-->
+
+</mapper>

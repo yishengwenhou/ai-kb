@@ -109,7 +109,7 @@ public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, K
                 .visibility(createDTO.getVisibility())
                 .ownerType(createDTO.getOwnerType())
                 .ownerId(createDTO.getOwnerId())
-                .status(0) // 默认就绪状态
+                .status(0)
                 .build();
 
         // 设置归属
@@ -181,14 +181,14 @@ public class KnowledgeBaseServiceImpl extends ServiceImpl<KnowledgeBaseMapper, K
         return baseMapper.deleteById(id) > 0;
     }
 
-    @Override
-    public IPage<Document> getDocuments(Long kbId, String keyword, int pageNum, int pageSize) {
-        Page<Document> page = new Page<>(pageNum, pageSize);
-        IPage<Document> result = documentMapper.selectPage(page,
-                new LambdaQueryWrapper<Document>()
-                        .eq(Document::getKbId, kbId)
-                        .like(StringUtils.hasText(keyword), Document::getFileName, keyword)
-                        .orderByDesc(Document::getCreateTime));
-        return result;
-    }
+//    @Override
+//    public IPage<Document> getDocuments(Long kbId, String keyword, int pageNum, int pageSize) {
+//        Page<Document> page = new Page<>(pageNum, pageSize);
+//        IPage<Document> result = documentMapper.selectPage(page,
+//                new LambdaQueryWrapper<Document>()
+//                        .eq(Document::getKbId, kbId)
+//                        .like(StringUtils.hasText(keyword), Document::getFileName, keyword)
+//                        .orderByDesc(Document::getCreateTime));
+//        return result;
+//    }
 }

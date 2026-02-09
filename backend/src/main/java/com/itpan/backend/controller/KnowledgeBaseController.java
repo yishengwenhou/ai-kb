@@ -65,14 +65,14 @@ public class KnowledgeBaseController {
      * @param pageSize 页大小
      * @return
      */
-    @GetMapping("/{id}/documents")
-    public ResponseEntity<IPage<Document>> getDocuments(@PathVariable Long id,
-                                          @RequestParam(required = false) String keyword,
-                                          @RequestParam(defaultValue = "1") int pageNum,
-                                          @RequestParam(defaultValue = "10") int pageSize) {
-        IPage<Document> documents = knowledgeBaseService.getDocuments(id,keyword,pageNum, pageSize);
-        return ResponseEntity.ok(documents);
-    }
+//    @GetMapping("/{id}/documents")
+//    public ResponseEntity<IPage<Document>> getDocuments(@PathVariable Long id,
+//                                          @RequestParam(required = false) String keyword,
+//                                          @RequestParam(defaultValue = "1") int pageNum,
+//                                          @RequestParam(defaultValue = "10") int pageSize) {
+//        IPage<Document> documents = knowledgeBaseService.getDocuments(id,keyword,pageNum, pageSize);
+//        return ResponseEntity.ok(documents);
+//    }
 
 
     /**

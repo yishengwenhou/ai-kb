@@ -1,0 +1,224 @@
+/* =============== 云文档风格主题变量 =============== */
+:root {
+  /* 字体 */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* 侧边栏 */
+  --sidebar-bg: #F5F6F7;
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 64px;
+
+  /* 主内容区 */
+  --main-bg: #FFFFFF;
+
+  /* 颜色 */
+  --primary-blue: #3370FF;
+  --active-bg: #EBF2FF;
+  --text-main: #1F2329;
+  --text-sub: #646A73;
+  --border-color: #DEE0E3;
+  --border-color-light: #E4E6E8;
+  --search-bg: #EAEBEC;
+  --hover-bg: #ECECEC;
+
+  /* 卡片 */
+  --card-radius: 8px;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --card-hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  /* 知识库卡片渐变 */
+  --kb-gradient-pink: linear-gradient(135deg, #F52296 0%, #D61B80 100%);
+  --kb-gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --kb-gradient-blue: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --kb-gradient-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  --kb-gradient-orange: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+
+  /* Element Plus 主题色覆盖 */
+  --el-color-primary: #3370FF !important;
+  --el-color-primary-light-3: #8CA5FF !important;
+  --el-color-primary-light-5: #BAD0FF !important;
+  --el-color-primary-light-7: #D7E4FF !important;
+  --el-color-primary-light-8: #EBF2FF !important;
+  --el-color-primary-light-9: #F5F9FF !important;
+  --el-color-primary-dark-2: #285AD0 !important;
+}
+
+/* =============== 全局样式 =============== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-family);
+  color: var(--text-main);
+  background-color: var(--main-bg);
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* =============== Element Plus 组件覆盖 =============== */
+
+/* 按钮 */
+.el-button--primary {
+  --el-button-bg-color: var(--primary-blue) !important;
+  --el-button-border-color: var(--primary-blue) !important;
+  --el-button-hover-bg-color: #285AD0 !important;
+  --el-button-hover-border-color: #285AD0 !important;
+}
+
+/* 输入框 */
+.el-input__wrapper {
+  --el-input-bg-color: #fff !important;
+  --el-input-border-color: var(--border-color) !important;
+  --el-input-focus-border-color: var(--primary-blue) !important;
+  box-shadow: none !important;
+}
+
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--border-color) inset !important;
+}
+
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--primary-blue) inset !important;
+}
+
+/* 标签页 */
+.el-tabs__active-bar {
+  background-color: var(--primary-blue) !important;
+}
+
+.el-tabs__item.is-active {
+  color: var(--primary-blue) !important;
+}
+
+.el-tabs__item:hover {
+  color: var(--primary-blue) !important;
+}
+
+/* 下拉菜单 */
+.el-dropdown-menu__item:hover {
+  background-color: var(--active-bg) !important;
+  color: var(--primary-blue) !important;
+}
+
+/* 卡片 */
+.el-card {
+  --el-card-border-color: var(--border-color) !important;
+  --el-card-border-radius: var(--card-radius) !important;
+  box-shadow: none !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* 对话框 */
+.el-dialog {
+  --el-dialog-border-radius: 12px !important;
+}
+
+.el-dialog__header {
+  padding: 20px 24px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.el-dialog__body {
+  padding: 24px !important;
+}
+
+.el-dialog__footer {
+  padding: 16px 24px !important;
+  border-top: 1px solid var(--border-color) !important;
+}
+
+/* 表格 */
+.el-table {
+  --el-table-border-color: var(--border-color) !important;
+  --el-table-header-bg-color: #F9FAFB !important;
+  --el-table-row-hover-bg-color: var(--active-bg) !important;
+}
+
+.el-table th.el-table__cell {
+  background-color: #F9FAFB !important;
+  color: var(--text-sub) !important;
+  font-weight: 500 !important;
+}
+
+/* 表格内容居中 */
+.el-table .el-table__cell {
+  text-align: center !important;
+}
+
+/* 表格列配置居中 */
+.el-table .cell {
+  text-align: center !important;
+}
+
+/* 标签 */
+.el-tag--primary {
+  --el-tag-bg-color: var(--active-bg) !important;
+  --el-tag-border-color: var(--el-color-primary-light-7) !important;
+  --el-tag-text-color: var(--primary-blue) !important;
+}
+
+/* 分页 */
+.el-pagination.is-background .el-pager li:not(.is-disabled).is-active {
+  background-color: var(--primary-blue) !important;
+  color: #fff !important;
+}
+
+/* 消息提示 */
+.el-message {
+  --el-message-bg-color: #fff !important;
+  --el-message-border-color: var(--border-color) !important;
+  --el-border-radius-base: 8px !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+/* =============== 工具类 =============== */
+.text-main {
+  color: var(--text-main);
+}
+
+.text-sub {
+  color: var(--text-sub);
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

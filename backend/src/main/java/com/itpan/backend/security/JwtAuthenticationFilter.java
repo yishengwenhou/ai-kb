@@ -27,8 +27,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
-    // backend/security/JwtAuthenticationFilter.java
-
     private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Override

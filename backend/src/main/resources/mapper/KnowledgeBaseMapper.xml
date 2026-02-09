@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itpan.backend.mapper.KnowledgeBaseMapper">
+
+    <select id="selectDeletedPage" resultType="com.itpan.backend.model.entity.KnowledgeBase">
+        SELECT * FROM knowledge_base
+        WHERE deleted = 1
+        <if test="keyword != null and keyword != ''">
+            AND name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY update_time DESC
+    </select>
+
+    <delete id="permanentDelete">
+        DELETE FROM knowledge_base WHERE id = #{id}
+    </delete>
+
+</mapper>
