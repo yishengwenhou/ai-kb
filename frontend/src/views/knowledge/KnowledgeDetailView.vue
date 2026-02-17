@@ -50,9 +50,8 @@
 
       <div class="nav-tree">
         <template v-for="item in documentTree" :key="item.id">
-          <NavTreeItem :item="item" :selected-doc-id="selectedDocId" @doc-click="handleDocClick"
-            @doc-command="handleDocCommand" @create-child-folder="handleCreateChildFolder"
-            @create-node="handleCreateNode" />
+          <NavTreeItem :item="item" :level="0" :selected-doc-id="selectedDocId" @doc-click="handleDocClick"
+            @doc-command="handleDocCommand" @create-node="handleCreateNode" @toggle-expand="handleToggleExpand" />
         </template>
       </div>
 
@@ -249,6 +248,7 @@ import {
 import { knowledgeApi } from '@/api/knowledge'
 import { documentApi } from '@/api/document'
 import type { KnowledgeBase, Document as DocType } from '@/types'
+import NavTreeItem from './components/NavTreeItem.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -336,7 +336,7 @@ const loadDocuments = async (parentId: number = 0) => {
       isFolder: doc.type === 'folder' ? 1 : 0,
       fileName: doc.title || doc.fileName // 优先使用 title，兼容旧接口
     }))
-    documentTree.value = buildTree(documents.value)
+    // documentTree 的更新移到 initTree 和 handleToggleExpand 中
   } catch (error) {
     console.error('加载文档列表失败:', error)
   } finally {
@@ -344,27 +344,88 @@ const loadDocuments = async (parentId: number = 0) => {
   }
 }
 
-// 构建文档树
-const buildTree = (docs: DocType[]): DocType[] => {
-  const map = new Map<number, DocType>()
-  const roots: DocType[] = []
+// 初始化左侧目录树
+// 修改后的 initTree 方法
+const initTree = async () => {
+  try {
+    // 1. 请求根目录数据
+    const response = await documentApi.list(knowledgeId, 0)
 
-  docs.forEach(doc => {
-    map.set(doc.id, { ...doc, children: [] })
-  })
-
-  docs.forEach(doc => {
-    const item = map.get(doc.id)!
-    if (doc.parentId && map.has(doc.parentId)) {
-      const parent = map.get(doc.parentId)!
-      if (!parent.children) parent.children = []
-      parent.children.push(item)
-    } else {
-      roots.push(item)
+    // 2. 统一处理数据解包（防止后端返回结构不一致）
+    let list: DocType[] = []
+    if (Array.isArray(response)) {
+      list = response
+    } else if (response && Array.isArray((response as any).data)) {
+      list = (response as any).data
+    } else if (response && (response as any).records) {
+      list = (response as any).records
     }
-  })
 
-  return roots
+    // 3. 【核心逻辑】处理左侧目录树数据
+    const roots = list.map((doc: DocType) => ({
+      ...doc,
+      isFolder: doc.type === 'folder' ? 1 : 0,
+      fileName: doc.title || doc.fileName,
+      children: [] // 树节点需要 children 属性
+    }))
+    documentTree.value = roots
+
+    // 4. 【进阶优化】如果当前正好在根目录，顺便把数据给右侧列表
+    // 这样就不用再单独调一次 loadDocuments(0) 了
+    if (currentParentId.value === 0) {
+      documents.value = list.map((doc: DocType) => ({
+        ...doc,
+        isFolder: doc.type === 'folder' ? 1 : 0,
+        fileName: doc.title || doc.fileName
+      }))
+    }
+
+  } catch (error) {
+    console.error('初始化目录树失败:', error)
+  }
+}
+
+// 查找节点
+const findNodeById = (nodes: DocType[], id: number): DocType | null => {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    if (node.children && node.children.length > 0) {
+      const found = findNodeById(node.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+// 加载子节点
+const loadNodeChildren = async (node: DocType) => {
+  try {
+    const response = await documentApi.list(knowledgeId, node.id)
+    const children = (response || []).map((doc: DocType) => ({
+      ...doc,
+      isFolder: doc.type === 'folder' ? 1 : 0,
+      fileName: doc.title || doc.fileName,
+      children: []
+    }))
+    node.children = children
+  } catch (error) {
+    console.error('加载子节点失败:', error)
+  }
+}
+
+// 展开/收起节点
+const handleToggleExpand = async (id: number, expanded: boolean) => {
+  const node = findNodeById(documentTree.value, id)
+  if (node) {
+    node.expanded = expanded // 更新数据模型中的展开状态
+
+    if (!expanded) return
+
+    // 如果没有子节点（且不是文件），尝试加载
+    if ((!node.children || node.children.length === 0) && node.type !== 'file') {
+      await loadNodeChildren(node)
+    }
+  }
 }
 
 // 搜索
@@ -382,6 +443,9 @@ const handleDocClick = async (doc: DocType) => {
     selectedDocId.value = null
     currentDoc.value = null
     await loadDocuments(doc.id)
+
+    // 【新增】同时展开左侧树节点
+    await handleToggleExpand(doc.id, true)
   } else {
     // 文档处理 - 加载详情
     selectedDocId.value = doc.id
@@ -449,8 +513,23 @@ const confirmCreateFolder = async () => {
     ElMessage.success('文件夹创建成功')
     showCreateFolderDialog.value = false
     createFolderForm.title = ''
-    // 刷新文档列表
-    loadDocuments(currentParentId.value)
+
+    // 刷新右侧列表
+    if (currentParentId.value === createFolderForm.parentId) {
+      await loadDocuments(createFolderForm.parentId)
+    }
+
+    // 刷新左侧树
+    if (createFolderForm.parentId === 0) {
+      await initTree()
+    } else {
+      const parentNode = findNodeById(documentTree.value, createFolderForm.parentId)
+      if (parentNode) {
+        parentNode.expanded = true // 确保创建后父节点是展开的
+        await loadNodeChildren(parentNode)
+      }
+    }
+
   } catch (error) {
     console.error('创建文件夹失败:', error)
     ElMessage.error('创建文件夹失败')
@@ -483,6 +562,18 @@ const handleUpload = async () => {
     selectedFile.value = null
     uploadRef.value?.clearFiles()
     loadDocuments(currentParentId.value)
+
+    // 刷新左侧树
+    const targetId = currentParentId.value
+    if (targetId === 0) {
+      await initTree()
+    } else {
+      const parentNode = findNodeById(documentTree.value, targetId)
+      if (parentNode) {
+        parentNode.expanded = true // 确保上传后父节点是展开的
+        await loadNodeChildren(parentNode)
+      }
+    }
   } catch (error) {
     console.error('上传失败:', error)
   } finally {
@@ -522,8 +613,22 @@ const handleCreateDoc = async (type: string, parentId: number) => {
     });
 
     ElMessage.success('创建成功');
-    // 刷新列表并展开父节点
-    await loadDocuments(parentId === 0 ? currentParentId.value : parentId);
+
+    // 刷新右侧列表（如果当前就在该目录下）
+    if (currentParentId.value === parentId) {
+      await loadDocuments(parentId);
+    }
+
+    // 刷新左侧树节点
+    if (parentId === 0) {
+      await initTree();
+    } else {
+      const parentNode = findNodeById(documentTree.value, parentId);
+      if (parentNode) {
+        parentNode.expanded = true; // 确保创建后父节点是展开的
+        await loadNodeChildren(parentNode);
+      }
+    }
 
   } catch (error) {
     console.error(error);
@@ -581,148 +686,12 @@ const getDocStatusLabel = (status?: number) => {
   return map[status ?? 0] || '未知'
 }
 
-// 目录树节点组件（递归渲染）
-// 目录树节点组件（递归渲染）
-const NavTreeItem = defineComponent({
-  name: 'NavTreeItem',
-  props: {
-    item: {
-      type: Object as () => DocType,
-      required: true
-    },
-    selectedDocId: {
-      type: Number as () => number | null,
-      default: null
-    },
-    level: {
-      type: Number,
-      default: 0
-    },
-    expanded: {
-      type: Boolean,
-      default: false
-    }
-  },
-  emits: ['docClick', 'docCommand', 'createNode', 'toggleExpand'],
-  setup(props, { emit }) {
-    // 【核心修复】宽松的容器判断逻辑
-    // 只要类型不是 'file' (附件)，都视为容器，显示 + 号
-    // 这样即使旧数据没有 type 字段，也会默认显示 + 号
-    const showAddButton = computed(() => true)
 
-    // 展开箭头逻辑：文件夹始终显示，文档只有在有子节点时才显示
-    const showExpandIcon = computed(() => {
-      if (props.item.isFolder) return true
-      return props.item.children && props.item.children.length > 0
-    })
-
-    const isExpanded = ref(props.expanded || props.level === 0)
-
-    const handleClick = (e: MouseEvent) => {
-      emit('docClick', props.item)
-    }
-
-    const handleExpandClick = (e: MouseEvent) => {
-      e.stopPropagation()
-      isExpanded.value = !isExpanded.value
-      emit('toggleExpand', props.item.id, isExpanded.value)
-    }
-
-    const handleCommand = (cmd: string) => {
-      emit('docCommand', cmd, props.item)
-    }
-
-    const handleAddCommand = (command: string) => {
-      emit('createNode', command, props.item)
-    }
-
-    return () => h('div', { class: ['tree-node-wrapper'] }, [
-      h('div', {
-        class: ['nav-item', { active: props.selectedDocId === props.item.id }],
-        style: { paddingLeft: `${props.level * 16 + 8}px` },
-        onClick: handleClick
-      }, [
-        // ... 展开箭头 (保持不变) ...
-        showExpandIcon.value ? h('el-icon', {
-          class: ['expand-icon', { expanded: isExpanded.value }],
-          onClick: handleExpandClick
-        }, () => h(ArrowRight)) : h('span', { class: 'expand-placeholder' }),
-
-        // ... 类型图标 (保持不变) ...
-        h('el-icon', { class: ['type-icon'] }, () => props.item.isFolder ? h(Folder) : h(Document)),
-
-        // ... 标题 (保持不变) ...
-        h('span', { class: 'doc-name' }, props.item.fileName),
-
-        // 2. 【修改】操作按钮区域
-        // 这里是关键：无论什么类型，只要鼠标悬停，这个 div 就会显示
-        h('div', { class: 'item-actions' }, [
-
-          // --- [+] 加号按钮 ---
-          h('el-dropdown', {
-            trigger: 'click',
-            placement: 'bottom-start', // 下拉菜单位置
-            onCommand: handleAddCommand,
-            onClick: (e: MouseEvent) => e.stopPropagation()
-          }, {
-            default: () => h('div', {
-              class: 'action-btn add-btn', // 添加特定类名方便控制样式
-              title: '新建'
-            }, [h('el-icon', {}, () => h(Plus))]),
-            dropdown: () => h('el-dropdown-menu', {}, [
-              h('el-dropdown-item', { command: 'doc' }, [
-                h('el-icon', { style: 'color: #3370ff' }, () => h(Document)), '新建文档'
-              ]),
-              h('el-dropdown-item', { command: 'folder' }, [
-                h('el-icon', { style: 'color: #ffb800' }, () => h(Folder)), '新建文件夹'
-              ]),
-              // 根据需要决定是否允许在子节点上传
-              h('el-dropdown-item', { command: 'upload', divided: true }, [
-                h('el-icon', {}, () => h(Upload)), '上传文件'
-              ])
-            ])
-          }),
-
-          // --- [...] 更多按钮 ---
-          h('el-dropdown', {
-            trigger: 'click',
-            placement: 'bottom-start',
-            onCommand: handleCommand,
-            onClick: (e: MouseEvent) => e.stopPropagation()
-          }, {
-            default: () => h('div', {
-              class: 'action-btn more-btn',
-              title: '更多'
-            }, [h('el-icon', {}, () => h(MoreFilled))]),
-            dropdown: () => h('el-dropdown-menu', {}, () => [
-              h('el-dropdown-item', { command: 'rename' }, () => [h('el-icon', {}, () => h(Edit)), '重命名']),
-              h('el-dropdown-item', { command: 'delete', divided: true }, () => [h('el-icon', {}, () => h(Delete)), '删除'])
-            ])
-          })
-        ])
-      ]),
-
-      // 子节点递归渲染
-      isExpanded.value && props.item.children && props.item.children.length > 0
-        ? props.item.children.map((child: DocType) => h(NavTreeItem, {
-          key: child.id,
-          item: child,
-          selectedDocId: props.selectedDocId,
-          level: props.level + 1,
-          expanded: false,
-          onDocClick: (item: DocType) => emit('docClick', item),
-          onDocCommand: (cmd: string, item: DocType) => emit('docCommand', cmd, item),
-          onCreateNode: (type: string, parent: DocType) => emit('createNode', type, parent), // 务必透传此事件
-          onToggleExpand: (id: number, expanded: boolean) => emit('toggleExpand', id, expanded)
-        }))
-        : null
-    ])
-  }
-})
 
 onMounted(() => {
   loadKnowledgeInfo()
-  loadDocuments()
+  // loadDocuments()
+  initTree()
 })
 </script>
 
@@ -764,7 +733,7 @@ onMounted(() => {
 }
 
 /* 占位符，保证没有箭头的文档标题也能对齐 */
-.expand-placeholder {
+:deep(.expand-placeholder) {
   width: 16px;
   height: 16px;
   margin-right: 2px;
@@ -774,7 +743,7 @@ onMounted(() => {
 }
 
 /* 确保加号按钮有尺寸 */
-.add-child-btn {
+:deep(.add-child-btn) {
   width: 20px;
   height: 20px;
   display: flex;
@@ -788,56 +757,59 @@ onMounted(() => {
   color: #646a73;
 }
 
+:deep(.nav-item:hover .add-child-btn) {
+  opacity: 1;
+}
+
+/* 树节点包装器，用于确保 :deep 能够穿透 */
+:deep(.tree-node-wrapper) {
+  display: block;
+}
+
 /* 树节点行样式 */
-.nav-item {
+:deep(.nav-item) {
   display: flex;
   align-items: center;
-  height: 36px; /* 稍微调高一点，方便点击 */
-  padding-right: 8px; /* 右侧留点空隙 */
+  height: 32px;
+  padding: 0 8px;
   margin-bottom: 2px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   color: #1f2329;
   transition: background-color 0.1s;
-  position: relative; /* 为绝对定位做准备（如果需要） */
 }
 
-.nav-item:hover {
-  background-color: rgba(31, 35, 41, 0.08); /* 悬停背景色加深一点点 */
+:deep(.nav-item:hover) {
+  background-color: rgba(31, 35, 41, 0.08);
+  /* 悬停背景色加深一点点 */
 }
 
 /* 激活状态 */
-.nav-item.active {
-  background-color: #e1efff; /* 飞书蓝背景 */
+:deep(.nav-item.active) {
+  background-color: #e1efff;
+  /* 飞书蓝背景 */
   color: #3370ff;
 }
 
-.add-child-btn:hover {
+:deep(.add-child-btn:hover) {
   background-color: rgba(0, 0, 0, 0.05);
   color: #3370ff;
 }
 
 /* 确保操作区域布局正确 */
-.item-actions {
+:deep(.item-actions) {
   display: flex;
   align-items: center;
   gap: 4px;
   margin-left: auto;
   /* 推到最右边 */
-}
-
-/* 调整操作区样式，确保按钮可见 */
-.item-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   opacity: 0;
   /* 默认隐藏 */
   transition: opacity 0.2s;
 }
 
-.nav-item:hover .item-actions {
+:deep(.nav-item:hover .item-actions) {
   opacity: 1;
 }
 
@@ -916,13 +888,16 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  color: #646a73; /* 图标默认灰色 */
+  color: #646a73;
+  /* 图标默认灰色 */
   transition: all 0.2s;
 }
 
 .action-btn:hover {
-  background-color: rgba(0, 0, 0, 0.08); /* 按钮悬停背景 */
-  color: #1f2329; /* 按钮悬停颜色变深 */
+  background-color: rgba(0, 0, 0, 0.08);
+  /* 按钮悬停背景 */
+  color: #1f2329;
+  /* 按钮悬停颜色变深 */
 }
 
 .nav-tree {
@@ -931,32 +906,9 @@ onMounted(() => {
   padding: 0 8px;
 }
 
-.nav-item {
-  display: flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 8px;
-  margin-bottom: 2px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #1f2329;
-  transition: background-color 0.1s;
-}
 
-.nav-item:hover {
-  background-color: rgba(31, 35, 41, 0.05);
-}
 
-.nav-item.active .action-btn {
-  color: #3370ff; /* 选中行时，按钮也是蓝色基调 */
-}
-
-.nav-item.active .action-btn:hover {
-  background-color: rgba(51, 112, 255, 0.1);
-}
-
-.expand-icon {
+:deep(.expand-icon) {
   width: 16px;
   height: 16px;
   margin-right: 2px;
@@ -966,21 +918,21 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.expand-icon.expanded {
+:deep(.expand-icon.expanded) {
   transform: rotate(90deg);
 }
 
-.type-icon {
+:deep(.type-icon) {
   margin-right: 6px;
   font-size: 16px;
   color: #646a73;
 }
 
-.nav-item.active .type-icon {
+:deep(.nav-item.active .type-icon) {
   color: #3370ff;
 }
 
-.doc-name {
+:deep(.doc-name) {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -988,25 +940,25 @@ onMounted(() => {
   margin-right: 4px;
 }
 
-.doc-actions {
+:deep(.doc-actions) {
   opacity: 0;
   transition: opacity 0.2s;
 }
 
 /* 悬停时显示操作按钮 */
-.nav-item:hover .doc-actions,
-.nav-item:hover .add-child-btn,
-.nav-item:hover .item-actions {
+:deep(.nav-item:hover .doc-actions),
+:deep(.nav-item:hover .add-child-btn),
+:deep(.nav-item:hover .item-actions) {
   opacity: 1;
 }
 
-.doc-actions .el-icon,
-.add-child-btn {
+:deep(.doc-actions .el-icon),
+:deep(.add-child-btn) {
   font-size: 14px;
   color: #646a73;
 }
 
-.add-child-btn {
+:deep(.add-child-btn) {
   opacity: 0;
   cursor: pointer;
   padding: 2px;
@@ -1014,9 +966,37 @@ onMounted(() => {
   transition: all 0.2s;
 }
 
-.add-child-btn:hover {
+:deep(.add-child-btn:hover) {
   background-color: rgba(51, 112, 255, 0.1);
   color: #3370ff;
+}
+
+:deep(.action-btn) {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #646a73;
+  /* 图标默认灰色 */
+  transition: all 0.2s;
+}
+
+:deep(.action-btn:hover) {
+  background-color: rgba(0, 0, 0, 0.08);
+  /* 按钮悬停背景 */
+  color: #1f2329;
+  /* 按钮悬停颜色变深 */
+}
+
+:deep(.nav-item.active .action-btn) {
+  color: #3370ff;
+  /* 选中行时，按钮也是蓝色基调 */
+}
+
+:deep(.nav-item.active .action-btn:hover) {
+  background-color: rgba(51, 112, 255, 0.1);
 }
 
 .sidebar-footer {

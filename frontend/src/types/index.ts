@@ -175,6 +175,9 @@ export interface Document {
 
   // 兼容：子节点（用于树形结构）
   children?: Document[]
+  
+  // 【新增】前端辅助字段：是否展开
+  expanded?: boolean
 }
 
 export interface DocumentTreeNode extends Document {

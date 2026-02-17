@@ -174,7 +174,13 @@ const activeMenu = computed(() => {
 // 菜单路由
 const menuRoutes = computed(() => {
   const mainRoute = router.getRoutes().find(r => r.path === '/')
-  return mainRoute?.children?.filter(r => !r.meta?.hideInMenu) || []
+  const children = mainRoute?.children?.filter(r => !r.meta?.hideInMenu) || []
+  
+  // 确保所有路径都是绝对路径，防止相对路径导致的路由跳转错误
+  return children.map(route => ({
+    ...route,
+    path: route.path.startsWith('/') ? route.path : `/${route.path}`
+  }))
 })
 
 // 面包屑导航
