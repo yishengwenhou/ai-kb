@@ -20,8 +20,6 @@ public class DocCreateDTO {
 
     private String treePath;
 
-    private String content;
-
     private String fileUrl;
 
     private Long fileSize;

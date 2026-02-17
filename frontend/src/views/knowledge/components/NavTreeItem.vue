@@ -120,7 +120,10 @@ const emit = defineEmits<{
 }>()
 
 // 只有文件夹显示加号
-const showAddButton = computed(() => props.item.isFolder || props.item.type === 'folder')
+const showAddButton = computed(() => {
+  const type = props.item.type
+  return props.item.isFolder || type === 'folder' || type === 'doc' || type === 'sheet'
+})
 
 // 展开箭头逻辑：精准判断
 const showExpandIcon = computed(() => {
@@ -142,9 +145,9 @@ const isExpanded = computed(() => !!props.item.expanded)
 
 // 获取图标颜色类
 const getIconColorClass = (item: DocType) => {
-  if (item.isFolder || item.type === 'folder') return 'icon-yellow'
-  if (item.type === 'sheet') return 'icon-green'
-  return 'icon-blue' // 默认文档为蓝色
+  if (item.isFolder || item.type === 'folder') return 'icon-yellow' // 文件夹是黄色
+  if (item.type === 'sheet') return 'icon-green'  // 表格是绿色
+  return 'icon-blue' // 文档是蓝色
 }
 
 const handleClick = () => {

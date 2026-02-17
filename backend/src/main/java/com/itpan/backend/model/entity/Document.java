@@ -48,10 +48,6 @@ public class Document extends BaseEntity {
     @TableField(value = "tree_path")
     private String treePath;
 
-    /** 文档富文本内容(JSON/HTML) - 仅 type='doc/sheet' 时有效 */
-    @TableField(value = "content")
-    private String content;
-
     /** 文件存储路径/OSS Key - 仅 type='file' 时有效 */
     @TableField(value = "file_url")
     private String fileUrl;

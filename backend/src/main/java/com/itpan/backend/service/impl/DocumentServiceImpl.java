@@ -4,12 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itpan.backend.common.constants.OssConstant;
+import com.itpan.backend.mapper.DocumentContentMapper;
 import com.itpan.backend.mapper.DocumentMapper;
 import com.itpan.backend.mapper.UserMapper;
 import com.itpan.backend.model.dto.document.DocContentUpdateDTO;
 import com.itpan.backend.model.dto.document.DocCreateDTO;
 import com.itpan.backend.model.dto.document.MoveNodeDTO;
 import com.itpan.backend.model.entity.Document;
+import com.itpan.backend.model.entity.DocumentContent;
 import com.itpan.backend.model.entity.User;
 import com.itpan.backend.model.vo.DocumentVO;
 import com.itpan.backend.service.DocumentService;
@@ -50,6 +52,9 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private DocumentContentMapper documentContentMapper;
 
     @Transactional(rollbackFor = Exception.class)
     public Document createNode(DocCreateDTO docCreateDTO) {
@@ -98,9 +103,15 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
 
         // 4. 初始化其他字段
         node.setStatus(0); // 默认正常状态
-        if (node.getContent() == null) node.setContent("");
 
-        this.save(node);
+        baseMapper.insert(node);
+        documentContentMapper.insert(
+                DocumentContent.builder()
+                .id(node.getId())
+                .content("")
+                .build()
+        );
+
         return node;
     }
 
@@ -223,7 +234,6 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
                     .fileSize(file.getSize())          // 新字段：大小
                     .fileHash(fileHash)                // 新字段：哈希
                     .status(0)                         // 0-就绪 (若需异步解析内容，可设为 1)
-                    .content("")                       // file 类型通常没有富文本内容，或解析后填入
                     .build();
 
             // 6. 调用统一创建方法 (自动计算 treePath 和 sort)
@@ -250,16 +260,23 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
 
     @Override
     public DocumentVO getNodeDetail(Long id) {
-        // 1. 查数据库
         Document doc = this.getById(id);
         if (doc == null) {
             throw new RuntimeException("文档不存在");
         }
+        DocumentContent docContent = documentContentMapper.selectById(id);
 
-        // 2. 转换为 VO
-        DocumentVO vo = new DocumentVO();
-        // 使用 BeanUtils 复制属性 (id, title, type, sort, parentId 等)
-        BeanUtils.copyProperties(doc, vo);
+        DocumentVO vo = DocumentVO.builder()
+                .id(doc.getId())
+                .title(doc.getTitle())
+                .type(doc.getType())
+                .sort(doc.getSort())
+                .parentId(doc.getParentId())
+                .treePath(doc.getTreePath())
+                .icon(doc.getIcon())
+                .description(doc.getDescription())
+                .content(docContent.getContent())
+                .build();
 
         // 3. 特殊处理
         if ("file".equals(doc.getType())) {
@@ -287,12 +304,13 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
 
     @Override
     public boolean updateContent(DocContentUpdateDTO docContentUpdateDTO) {
-        // 这里可以使用 LambdaUpdateWrapper 只更新 content 字段，提高性能
-        this.update(new LambdaUpdateWrapper<Document>()
-                .eq(Document::getId, docContentUpdateDTO.getId())
-                .set(Document::getContent, docContentUpdateDTO.getContent())
-                // 顺便更新一下修改时间
-                .set(Document::getUpdateTime, LocalDateTime.now()));
+
+        documentContentMapper.update(
+                new LambdaUpdateWrapper<DocumentContent>()
+                        .eq(DocumentContent::getId, docContentUpdateDTO.getId())
+                        .set(DocumentContent::getContent, docContentUpdateDTO.getContent())
+                        .set(DocumentContent::getContentHtml, docContentUpdateDTO.getContentHtml())
+        );
         return true;
     }
 
